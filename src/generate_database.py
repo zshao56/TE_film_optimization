@@ -13,12 +13,13 @@ if current_dir not in sys.path:
 
 from geometry.random_structure import generate_random_structure
 from main import run_simulation_pipeline
+from visualize_random_structures import plot_single_structure
 
 def generate_single_sample(args):
     """
     Worker function to generate and simulate a single random structure.
     """
-    Lx, Ly, nx, ny, nz = args
+    index, Lx, Ly, nx, ny, nz = args
     
     # 1. Randomize physics and dimensions
     h = np.random.uniform(0.0005, 0.002) # Film thickness: 0.5 mm to 2.0 mm
@@ -60,6 +61,10 @@ def generate_single_sample(args):
     
     sim_id = f"sim_rand_{uuid.uuid4().hex[:8]}"
     
+    # Visual check: Save a 3D plot every 10 samples
+    if index % 10 == 0:
+        plot_single_structure(random_geom, sim_id)
+    
     try:
         run_simulation_pipeline(random_geom, sim_id)
         return True, sim_id
@@ -78,8 +83,8 @@ def build_massive_database(num_samples, max_workers=None):
     if max_workers:
         print(f"Using {max_workers} CPU cores.")
     
-    # Prepare arguments for each task
-    tasks = [(Lx, Ly, nx, ny, nz) for _ in range(num_samples)]
+    # Prepare arguments for each task, including the index
+    tasks = [(i, Lx, Ly, nx, ny, nz) for i in range(num_samples)]
     
     success_count = 0
     fail_count = 0
