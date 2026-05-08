@@ -9,6 +9,7 @@ if current_dir not in sys.path:
     sys.path.append(current_dir)
 
 from geometry.baseline import generate_uniform_baseline, generate_3d_wedge
+from geometry.random_structure import generate_random_structure
 from simulation.custom_solver import Custom3DFDMSolver
 from postprocess.metrics import find_best_electrodes
 from data_io.metadata import append_metadata, save_h5_fields
@@ -16,16 +17,19 @@ from data_io.metadata import append_metadata, save_h5_fields
 def run_simulation_pipeline(geom_params, sim_id):
     Lx, Ly, h = geom_params['Lx'], geom_params['Ly'], geom_params['h']
     
-    # Boundary Conditions setup (BC-001-TOP-ELECTRODE conceptual)
-    T_hot = 350.0  # K
-    T_air = 298.15 # K
-    h_c = 10.0     # Convection coeff top
-    h_c_side = 10.0# Convection coeff side
+    # Boundary Conditions setup (extract from params if available, else default)
+    T_hot = geom_params.get('T_hot', 350.0)  # K
+    T_air = geom_params.get('T_air', 298.15) # K
+    h_c = geom_params.get('h_c', 10.0)       # Convection coeff top
+    h_c_side = geom_params.get('h_c_side', 10.0)# Convection coeff side
+    
+    # Solver resolution
+    nx, ny, nz = 40, 40, 15
     
     print(f"Running simulation {sim_id} for {geom_params['geometry_type']}...")
     
     # Solve 3D Heat Equation
-    solver = Custom3DFDMSolver(geom_params, T_hot, T_air, h_c, h_c_side)
+    solver = Custom3DFDMSolver(geom_params, T_hot, T_air, h_c, h_c_side, nx=nx, ny=ny, nz=nz)
     try:
         mesh_data, field_data = solver.solve()
     finally:
@@ -54,11 +58,14 @@ def run_simulation_pipeline(geom_params, sim_id):
     }
     h5_path = save_h5_fields(sim_id, h5_data)
     
+    # Prepare parameters for JSON serialization (remove large numpy arrays like mask_3d)
+    json_params = {k: v for k, v in geom_params.items() if k != 'mask_3d'}
+    
     # Save Metadata
     metadata_record = {
         'simulation_id': sim_id,
         'geometry_type': geom_params['geometry_type'],
-        'geometry_parameters': json.dumps(geom_params),
+        'geometry_parameters': json.dumps(json_params),
         'thickness_h': h,
         'length_Lx': Lx,
         'length_Ly': Ly,
@@ -91,11 +98,15 @@ def run_simulation_pipeline(geom_params, sim_id):
 if __name__ == "__main__":
     Lx, Ly, h = 0.01, 0.01, 0.002 # 1cm x 1cm x 2mm
     k_low, k_high = 0.5, 150.0
+    nx, ny, nz = 40, 40, 15
     
-    # 1. Uniform Baseline
-    uniform_geom = generate_uniform_baseline(Lx, Ly, h, k_low)
-    run_simulation_pipeline(uniform_geom, f"sim_{uuid.uuid4().hex[:8]}")
-    
-    # 2. 3D Wedge Structure
-    wedge_geom = generate_3d_wedge(Lx, Ly, h, k_low, k_high)
-    run_simulation_pipeline(wedge_geom, f"sim_{uuid.uuid4().hex[:8]}")
+    print("Generating a batch of 5 Random Structures for the database...")
+    for i in range(5):
+        # Randomize volume fraction and blur level for diversity
+        vol_frac = np.random.uniform(0.3, 0.7)
+        blur = np.random.uniform(1.5, 3.5)
+        
+        random_geom = generate_random_structure(Lx, Ly, h, k_low, k_high, nx, ny, nz, 
+                                                volume_fraction_target=vol_frac, blur_sigma=blur)
+        
+        run_simulation_pipeline(random_geom, f"sim_rand_{uuid.uuid4().hex[:8]}")
