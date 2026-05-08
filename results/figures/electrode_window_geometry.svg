@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="455" viewBox="0 0 980 455">
+<defs>
+<marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+<path d="M0,0 L8,4 L0,8 Z" fill="context-stroke"/>
+</marker>
+</defs>
+<rect x="0.0" y="0.0" width="980.0" height="455.0" fill="#ffffff" stroke="none" stroke-width="1.0" opacity="1.0"/>
+<text x="490.0" y="36.0" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#222" text-anchor="middle" font-weight="700">Top electrode-window search geometry</text>
+<text x="490.0" y="62.0" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#333" text-anchor="middle" font-weight="400">Search fixed-size top windows; maximize averaged electrode temperature difference</text>
+<rect x="110.0" y="107.0" width="740.0" height="148.0" fill="#f7f3ea" stroke="#222" stroke-width="1.8" opacity="1.0"/>
+<rect x="110.0" y="107.0" width="740.0" height="148.0" fill="#d7e8f7" stroke="none" stroke-width="1" opacity="0.42"/>
+<polyline points="110.0,243.9 213.6,132.9 309.8,184.7 435.6,121.8 561.4,221.7 687.2,155.1 850.0,236.5" fill="none" stroke="#44546a" stroke-width="2"/>
+<text x="480.0" y="216.5" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#44546a" text-anchor="middle" font-weight="400">two-material substrate geometry</text>
+<rect x="110.0" y="107.0" width="740.0" height="20.7" fill="#f1c232" stroke="none" stroke-width="1" opacity="0.24"/>
+<text x="870.0" y="122.4" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#7a5a00" text-anchor="start" font-weight="400">top sampling band</text>
+<rect x="243.2" y="107.0" width="74.0" height="20.7" fill="#4f81bd" stroke="#1f4e79" stroke-width="1.6" opacity="0.9"/>
+<rect x="620.6" y="107.0" width="74.0" height="20.7" fill="#c0504d" stroke="#7f1d1d" stroke-width="1.6" opacity="0.92"/>
+<text x="280.2" y="81.0" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#1f4e79" text-anchor="middle" font-weight="400">cold electrode</text>
+<text x="280.2" y="98.0" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#1f4e79" text-anchor="middle" font-weight="400">window</text>
+<text x="657.6" y="81.0" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#7f1d1d" text-anchor="middle" font-weight="400">hot electrode</text>
+<text x="657.6" y="98.0" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#7f1d1d" text-anchor="middle" font-weight="400">window</text>
+<line x1="280.2" y1="107.0" x2="280.2" y2="149.7" stroke="#1f4e79" stroke-width="1.2" stroke-dasharray="5,4"/>
+<line x1="657.6" y1="107.0" x2="657.6" y2="149.7" stroke="#7f1d1d" stroke-width="1.2" stroke-dasharray="5,4"/>
+<text x="280.2" y="165.7" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#1f4e79" text-anchor="middle" font-weight="400">x_cold_electrode</text>
+<text x="657.6" y="165.7" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#7f1d1d" text-anchor="middle" font-weight="400">x_hot_electrode</text>
+<line x1="110.0" y1="301.0" x2="850.0" y2="301.0" stroke="#333" stroke-width="1.2" marker-end="url(#arrow)"/>
+<line x1="850.0" y1="301.0" x2="110.0" y2="301.0" stroke="#333" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="480.0" y="329.0" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#333" text-anchor="middle" font-weight="400">L</text>
+<line x1="65.0" y1="255.0" x2="65.0" y2="107.0" stroke="#333" stroke-width="1.2" marker-end="url(#arrow)"/>
+<line x1="65.0" y1="107.0" x2="65.0" y2="255.0" stroke="#333" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="38.0" y="186.0" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#333" text-anchor="middle" font-weight="400">h</text>
+<line x1="620.6" y1="59.0" x2="694.6" y2="59.0" stroke="#7f1d1d" stroke-width="1.2" marker-end="url(#arrow)"/>
+<line x1="694.6" y1="59.0" x2="620.6" y2="59.0" stroke="#7f1d1d" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="657.6" y="45.0" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#7f1d1d" text-anchor="middle" font-weight="400">w_m</text>
+<line x1="868.0" y1="107.0" x2="868.0" y2="127.7" stroke="#7a5a00" stroke-width="1.2" marker-end="url(#arrow)"/>
+<line x1="868.0" y1="127.7" x2="868.0" y2="107.0" stroke="#7a5a00" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="902.0" y="122.4" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#7a5a00" text-anchor="middle" font-weight="400">t_m</text>
+<line x1="317.2" y1="185.7" x2="620.6" y2="185.7" stroke="#666" stroke-width="1.2" marker-end="url(#arrow)"/>
+<line x1="620.6" y1="185.7" x2="317.2" y2="185.7" stroke="#666" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="468.9" y="211.7" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#666" text-anchor="middle" font-weight="400">gap >= w_m + s_min</text>
+<line x1="198.8" y1="281.0" x2="198.8" y2="257.0" stroke="#b45f06" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="376.4" y1="281.0" x2="376.4" y2="257.0" stroke="#b45f06" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="554.0" y1="281.0" x2="554.0" y2="257.0" stroke="#b45f06" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="731.6" y1="281.0" x2="731.6" y2="257.0" stroke="#b45f06" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="480.0" y="360.0" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#b45f06" text-anchor="middle" font-weight="400">bottom thermal source or sink</text>
+<line x1="176.6" y1="33.0" x2="176.6" y2="89.0" stroke="#38761d" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="302.4" y1="33.0" x2="302.4" y2="89.0" stroke="#38761d" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="428.2" y1="33.0" x2="428.2" y2="89.0" stroke="#38761d" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="554.0" y1="33.0" x2="554.0" y2="89.0" stroke="#38761d" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="679.8" y1="33.0" x2="679.8" y2="89.0" stroke="#38761d" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="805.6" y1="33.0" x2="805.6" y2="89.0" stroke="#38761d" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="480.0" y="16.0" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#38761d" text-anchor="middle" font-weight="400">top boundary: convection/contact layer, not whole-surface fixed T</text>
+<text x="480.0" y="390.0" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#222" text-anchor="middle" font-weight="400">Delta T_parallel = T_hot_electrode_avg - T_cold_electrode_avg</text>
+<text x="480.0" y="415.0" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#555" text-anchor="middle" font-weight="400">The colored windows are example search results, not fixed end positions.</text>
+</svg>
