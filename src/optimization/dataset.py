@@ -75,8 +75,8 @@ class TEFilmDataset(Dataset):
         mask_3d = (k_map > threshold).astype(np.float32)
         
         # Add channel dimension for PyTorch 3D CNN: (C, D, H, W) -> (1, nx, ny, nz)
-        mask_tensor = torch.from_numpy(mask_3d).unsqueeze(0)
-        scalar_tensor = torch.from_numpy(scalars_norm)
+        mask_tensor = torch.from_numpy(mask_3d).unsqueeze(0).float()  # Ensure float32
+        scalar_tensor = torch.from_numpy(scalars_norm).float()  # Ensure float32
         
         # 3. Target
         target = np.array([row[self.target_col]], dtype=np.float32)
