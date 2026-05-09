@@ -1,0 +1,38 @@
+# Python and pycache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# IDEs and OS files
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Project specific data and results
+# Ignore all files in data/ except .gitkeep
+data/*
+!data/.gitkeep
+data/simulations/*
+!data/simulations/.gitkeep
+data/simulations/fields/*
+!data/simulations/fields/.gitkeep
+
+# Ignore all files in results/ except .gitkeep
+results/*
+!results/.gitkeep
+results/figures/*
+!results/figures/.gitkeep
+results/models/*
+!results/models/.gitkeep
