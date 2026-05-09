@@ -19,7 +19,7 @@ from main import run_simulation_pipeline
 def _sample_environment(rng):
     return {
         'T_hot': float(rng.uniform(308.0, 373.0)),
-        'T_air': float(rng.uniform(290.0, 298.0)),
+        'T_air': float(rng.uniform(293.0, 303.0)),
         'h_c': float(rng.uniform(5.0, 25.0)),
         'h_c_side': float(rng.uniform(5.0, 25.0))
     }
