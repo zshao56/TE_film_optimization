@@ -20,13 +20,23 @@ class TEFilmDataset(Dataset):
         """
         self.root_dir = root_dir
         # Only keep successful simulations that have a delta_T_parallel
-        df = pd.read_csv(metadata_csv)
+        df = pd.read_csv(metadata_csv, low_memory=False)
+        
+        # ENHANCEMENT: Force scalar columns to numeric to handle any lingering corrupt strings
+        self.scalar_cols = ['thickness_h', 'k_low', 'k_high', 'T_hot', 'T_air']
+        for col in self.scalar_cols:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+            
+        # Also ensure the target column is numeric
+        self.target_col = 'delta_T_parallel'
+        df[self.target_col] = pd.to_numeric(df[self.target_col], errors='coerce')
+
+        # Drop any rows that failed to parse (NaNs in our required columns)
+        df = df.dropna(subset=self.scalar_cols + [self.target_col, 'qc_pass'])
+        
         self.data_frame = df[df['qc_pass'] == True].reset_index(drop=True)
         
         # Calculate statistics for normalization (Z-score)
-        self.scalar_cols = ['thickness_h', 'k_low', 'k_high', 'T_hot', 'T_air']
-        self.target_col = 'delta_T_parallel'
-        
         self.scalar_mean = self.data_frame[self.scalar_cols].mean().values
         self.scalar_std = self.data_frame[self.scalar_cols].std().values
         # Prevent division by zero if std is very small
