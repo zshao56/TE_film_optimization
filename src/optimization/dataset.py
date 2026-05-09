@@ -67,7 +67,7 @@ class TEFilmDataset(Dataset):
         h5_path = os.path.join(self.root_dir, 'fields', h5_filename)
         
         with h5py.File(h5_path, 'r') as f:
-            k_map = f['fields/thermal_conductivity'][:]
+            k_map = f['fields/kappa'][:]  # Correct key is 'kappa', not 'thermal_conductivity'
             
         # Convert k_map to a binary mask (0 for k_low, 1 for k_high)
         # Using the midpoint as threshold
