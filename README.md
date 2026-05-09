@@ -1,5 +1,7 @@
 # TE Film Optimization
 
+**English** | [中文](README_zh.md)
+
 This repository focuses on the computational design and optimization of 3D thin thermoelectric (TE) film structures. The goal is to geometrically architect composite structures using two materials with different thermal conductivities to convert an out-of-plane thermal gradient into a maximized in-plane temperature difference on the top surface.
 
 ## 🌟 Key Features
