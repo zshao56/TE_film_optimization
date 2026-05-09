@@ -18,8 +18,8 @@ from main import run_simulation_pipeline
 
 def _sample_environment(rng):
     return {
-        'T_hot': float(rng.uniform(320.0, 400.0)),
-        'T_air': float(rng.uniform(290.0, 310.0)),
+        'T_hot': float(rng.uniform(308.0, 373.0)),
+        'T_air': float(rng.uniform(290.0, 298.0)),
         'h_c': float(rng.uniform(5.0, 25.0)),
         'h_c_side': float(rng.uniform(5.0, 25.0))
     }
@@ -80,8 +80,8 @@ def generate_single_sample(args):
     
     # 1. Randomize physics and dimensions
     h = float(rng.uniform(0.0005, 0.002)) # Film thickness: 0.5 mm to 2.0 mm
-    k_low = float(rng.uniform(0.1, 1.0))
-    k_high = float(rng.uniform(50.0, 400.0))
+    k_low = float(rng.uniform(0.08, 0.5))
+    k_high = float(rng.uniform(1.0, 5.0))
     
     env_params = _sample_environment(rng)
     geom = _sample_geometry(Lx, Ly, h, k_low, k_high, nx, ny, nz, env_params, rng, mode, structured_ratio)
