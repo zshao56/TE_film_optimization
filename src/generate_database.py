@@ -1,7 +1,6 @@
 import os
 import sys
 import uuid
-import json
 import argparse
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -12,79 +11,118 @@ if current_dir not in sys.path:
     sys.path.append(current_dir)
 
 from geometry.random_structure import generate_random_structure
+from geometry.structured_library import sample_structured_structure
 from main import run_simulation_pipeline
-from visualize_random_structures import plot_single_structure
 
-def generate_single_sample(args):
-    """
-    Worker function to generate and simulate a single random structure.
-    """
-    index, Lx, Ly, nx, ny, nz = args
-    
-    # 1. Randomize physics and dimensions
-    h = np.random.uniform(0.0005, 0.002) # Film thickness: 0.5 mm to 2.0 mm
-    k_low = np.random.uniform(0.1, 1.0)
-    k_high = np.random.uniform(50.0, 400.0)
-    
-    env_params = {
-        'T_hot': np.random.uniform(320.0, 400.0),
-        'T_air': np.random.uniform(290.0, 310.0),
-        'h_c': np.random.uniform(5.0, 25.0),
-        'h_c_side': np.random.uniform(5.0, 25.0)
+
+def _sample_environment(rng):
+    return {
+        'T_hot': float(rng.uniform(320.0, 400.0)),
+        'T_air': float(rng.uniform(290.0, 310.0)),
+        'h_c': float(rng.uniform(5.0, 25.0)),
+        'h_c_side': float(rng.uniform(5.0, 25.0))
     }
-    
-    # 2. Randomize volume fraction
-    vol_frac = np.random.uniform(0.2, 0.8)
-    
-    # 3. Randomize topology style (Isotropic vs Anisotropic)
-    style = np.random.choice(['isotropic', 'pillars_z', 'lamellae_xy', 'lamellae_yz', 'lamellae_xz'])
-    base_blur = np.random.uniform(1.0, 3.0)
-    high_blur = np.random.uniform(8.0, 15.0)
-    
+
+
+def _sample_random_smoothed_structure(Lx, Ly, h, k_low, k_high, nx, ny, nz, env_params, rng):
+    # Random topology remains useful as a minority exploration source, but it
+    # should not dominate the database because most samples are not interpretable.
+    vol_frac = float(rng.uniform(0.2, 0.8))
+
+    style = rng.choice(['isotropic', 'pillars_z', 'lamellae_xy', 'lamellae_yz', 'lamellae_xz'])
+    base_blur = float(rng.uniform(1.0, 3.0))
+    high_blur = float(rng.uniform(8.0, 15.0))
+
     if style == 'isotropic':
         blur_sigma = base_blur
     elif style == 'pillars_z':
-        # Stretch along Z to form columns/pillars
         blur_sigma = (base_blur, base_blur, high_blur)
     elif style == 'lamellae_xy':
-        # Stretch along X and Y to form stacked planes (lamellae)
         blur_sigma = (high_blur, high_blur, base_blur * 0.5)
     elif style == 'lamellae_yz':
         blur_sigma = (base_blur * 0.5, high_blur, high_blur)
     elif style == 'lamellae_xz':
         blur_sigma = (high_blur, base_blur * 0.5, high_blur)
-    
-    random_geom = generate_random_structure(
-        Lx, Ly, h, k_low, k_high, nx, ny, nz, 
-        volume_fraction_target=vol_frac, blur_sigma=blur_sigma, env_params=env_params
+    else:
+        raise ValueError(f"Unsupported random topology style: {style}")
+
+    geom = generate_random_structure(
+        Lx, Ly, h, k_low, k_high, nx, ny, nz,
+        volume_fraction_target=vol_frac, blur_sigma=blur_sigma, env_params=env_params, rng=rng
     )
+    geom['random_topology_style'] = str(style)
+    return geom
+
+
+def _sample_geometry(Lx, Ly, h, k_low, k_high, nx, ny, nz, env_params, rng, mode, structured_ratio):
+    if mode == 'random':
+        source = 'random'
+    elif mode == 'structured':
+        source = 'structured'
+    elif mode == 'mixed':
+        source = 'structured' if rng.random() < structured_ratio else 'random'
+    else:
+        raise ValueError(f"Unsupported generation mode: {mode}")
+
+    if source == 'structured':
+        return sample_structured_structure(Lx, Ly, h, k_low, k_high, nx, ny, nz, env_params=env_params, rng=rng)
+
+    return _sample_random_smoothed_structure(Lx, Ly, h, k_low, k_high, nx, ny, nz, env_params, rng)
+
+
+def generate_single_sample(args):
+    """
+    Worker function to generate and simulate a single structure.
+    """
+    index, Lx, Ly, nx, ny, nz, mode, structured_ratio, seed = args
+    rng = np.random.default_rng(seed)
     
-    sim_id = f"sim_rand_{uuid.uuid4().hex[:8]}"
+    # 1. Randomize physics and dimensions
+    h = float(rng.uniform(0.0005, 0.002)) # Film thickness: 0.5 mm to 2.0 mm
+    k_low = float(rng.uniform(0.1, 1.0))
+    k_high = float(rng.uniform(50.0, 400.0))
+    
+    env_params = _sample_environment(rng)
+    geom = _sample_geometry(Lx, Ly, h, k_low, k_high, nx, ny, nz, env_params, rng, mode, structured_ratio)
+    geom['sample_seed'] = int(seed)
+
+    sim_id = f"sim_{geom['geometry_type']}_{uuid.uuid4().hex[:8]}"
     
     # Visual check: Save a 3D plot every 10 samples
     if index % 10 == 0:
-        plot_single_structure(random_geom, sim_id)
+        from visualize_random_structures import plot_single_structure
+        plot_single_structure(geom, sim_id)
     
     try:
-        run_simulation_pipeline(random_geom, sim_id)
+        run_simulation_pipeline(geom, sim_id)
         return True, sim_id
     except Exception as e:
         return False, str(e)
 
-def build_massive_database(num_samples, max_workers=None):
+def build_massive_database(num_samples, max_workers=None, mode='mixed', structured_ratio=0.8, seed=None):
     """
     Generate a large database using multiprocessing.
     """
+    if not 0.0 <= structured_ratio <= 1.0:
+        raise ValueError("structured_ratio must be between 0 and 1.")
+
     # Fixed in-plane dimensions and resolution
     Lx, Ly = 0.01, 0.01 # 1cm x 1cm
-    nx, ny, nz = 40, 40, 15
+    nx, ny, nz = 50, 50, 20
     
-    print(f"Starting massive database generation: {num_samples} samples.")
+    print(f"Starting database generation: {num_samples} samples.")
+    print(f"Generation mode: {mode}. Structured ratio for mixed mode: {structured_ratio:.2f}.")
     if max_workers:
         print(f"Using {max_workers} CPU cores.")
     
-    # Prepare arguments for each task, including the index
-    tasks = [(i, Lx, Ly, nx, ny, nz) for i in range(num_samples)]
+    root_sequence = np.random.SeedSequence(seed)
+    child_seeds = root_sequence.spawn(num_samples)
+
+    # Prepare arguments for each task, including the index and reproducible seed
+    tasks = [
+        (i, Lx, Ly, nx, ny, nz, mode, structured_ratio, int(child_seeds[i].generate_state(1)[0]))
+        for i in range(num_samples)
+    ]
     
     success_count = 0
     fail_count = 0
@@ -107,8 +145,21 @@ def build_massive_database(num_samples, max_workers=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate a massive database of 3D TE film structures.")
-    parser.add_argument("--samples", type=int, default=1000, help="Number of random structures to generate.")
+    parser.add_argument("--samples", type=int, default=1000, help="Number of structures to generate.")
     parser.add_argument("--cores", type=int, default=None, help="Number of CPU cores to use. Defaults to all available.")
+    parser.add_argument(
+        "--mode",
+        choices=["structured", "mixed", "random"],
+        default="mixed",
+        help="Structure source. 'mixed' uses mostly structured families plus some random-smoothed exploration."
+    )
+    parser.add_argument(
+        "--structured-ratio",
+        type=float,
+        default=0.8,
+        help="Fraction of structured samples in mixed mode."
+    )
+    parser.add_argument("--seed", type=int, default=None, help="Optional root random seed for reproducible sampling.")
     
     args = parser.parse_args()
-    build_massive_database(args.samples, args.cores)
+    build_massive_database(args.samples, args.cores, args.mode, args.structured_ratio, args.seed)

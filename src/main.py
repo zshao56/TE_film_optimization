@@ -8,8 +8,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.append(current_dir)
 
-from geometry.baseline import generate_uniform_baseline, generate_3d_wedge
-from geometry.random_structure import generate_random_structure
+from geometry.structured_library import sample_structured_structure
 from simulation.custom_solver import Custom3DFDMSolver
 from postprocess.metrics import find_best_electrodes
 from data_io.metadata import append_metadata, save_h5_fields
@@ -24,7 +23,7 @@ def run_simulation_pipeline(geom_params, sim_id):
     h_c_side = geom_params.get('h_c_side', 10.0)# Convection coeff side
     
     # Solver resolution
-    nx, ny, nz = 40, 40, 15
+    nx, ny, nz = 50, 50, 20
     
     print(f"Running simulation {sim_id} for {geom_params['geometry_type']}...")
     
@@ -98,15 +97,11 @@ def run_simulation_pipeline(geom_params, sim_id):
 if __name__ == "__main__":
     Lx, Ly, h = 0.01, 0.01, 0.002 # 1cm x 1cm x 2mm
     k_low, k_high = 0.5, 150.0
-    nx, ny, nz = 40, 40, 15
+    nx, ny, nz = 50, 50, 20
     
-    print("Generating a batch of 5 Random Structures for the database...")
+    print("Generating a batch of 5 structured structures for the database...")
+    rng = np.random.default_rng(20260508)
     for i in range(5):
-        # Randomize volume fraction and blur level for diversity
-        vol_frac = np.random.uniform(0.3, 0.7)
-        blur = np.random.uniform(1.5, 3.5)
+        geom = sample_structured_structure(Lx, Ly, h, k_low, k_high, nx, ny, nz, rng=rng)
         
-        random_geom = generate_random_structure(Lx, Ly, h, k_low, k_high, nx, ny, nz, 
-                                                volume_fraction_target=vol_frac, blur_sigma=blur)
-        
-        run_simulation_pipeline(random_geom, f"sim_rand_{uuid.uuid4().hex[:8]}")
+        run_simulation_pipeline(geom, f"sim_{geom['geometry_type']}_{uuid.uuid4().hex[:8]}")

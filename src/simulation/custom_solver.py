@@ -41,6 +41,15 @@ class Custom3DFDMSolver:
             mask = (X + Y) > 1.0
             kappa[mask] = self.geom.get('k_high', 10.0)
             
+        elif 'mask_3d' in self.geom:
+            # Use the explicit boolean mask passed from the geometry generator
+            mask = self.geom['mask_3d']
+            # Ensure the mask matches the solver resolution
+            if mask.shape == (self.nx, self.ny, self.nz):
+                kappa[mask] = self.geom.get('k_high', 10.0)
+            else:
+                raise ValueError("The shape of 'mask_3d' does not match the solver grid resolution.")
+            
         return kappa
 
     def solve(self):

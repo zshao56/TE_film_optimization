@@ -16,6 +16,13 @@ RESULTS_DIR = os.path.join(project_root, 'results')
 
 import matplotlib.pyplot as plt
 from geometry.random_structure import generate_random_structure
+from geometry.structured_library import (
+    generate_arc_structure,
+    generate_double_layer_structure,
+    generate_step_structure,
+    generate_wedge_structure,
+    generate_curved_wedge_structure,
+)
 
 # 尝试导入 my_toolbox，如果没有则使用基础 matplotlib
 try:
@@ -27,7 +34,7 @@ except ImportError:
 def plot_styles():
     Lx, Ly, h = 0.01, 0.01, 0.002
     k_low, k_high = 0.5, 150.0
-    nx, ny, nz = 30, 30, 15  # Slightly lower res for faster 3D plotting
+    nx, ny, nz = 50, 50, 20  # Matched with database generation resolution
 
     styles = ['isotropic', 'pillars_z', 'lamellae_xy', 'lamellae_xz']
     
@@ -77,6 +84,63 @@ def plot_styles():
     fig.savefig(save_path, dpi=300, bbox_inches='tight')
     print(f"Saved visualization to: {save_path}")
 
+
+def plot_structured_families():
+    Lx, Ly, h = 0.01, 0.01, 0.002
+    k_low, k_high = 0.5, 150.0
+    nx, ny, nz = 50, 50, 20
+
+    families = [
+        generate_wedge_structure(
+            Lx, Ly, h, k_low, k_high, nx, ny, nz,
+            volume_fraction_target=0.5, wedge_slope=0.9, direction='x'
+        ),
+        generate_curved_wedge_structure(
+            Lx, Ly, h, k_low, k_high, nx, ny, nz,
+            base_fraction=0.1, max_fraction=0.9, exponent=2.5, direction='x'
+        ),
+        generate_step_structure(
+            Lx, Ly, h, k_low, k_high, nx, ny, nz,
+            step_position=0.45, low_thickness_fraction=0.2, high_thickness_fraction=0.8, direction='x'
+        ),
+        generate_double_layer_structure(
+            Lx, Ly, h, k_low, k_high, nx, ny, nz,
+            split_fraction=0.5, bottom_width_fraction=0.65, top_width_fraction=0.65, direction='x'
+        ),
+        generate_arc_structure(
+            Lx, Ly, h, k_low, k_high, nx, ny, nz,
+            center_fraction=0.5, radius_fraction=0.42, base_height_fraction=0.15,
+            arc_height_fraction=0.6, channel_half_width_fraction=0.07, direction='x'
+        ),
+    ]
+
+    fig = plt.figure(figsize=(25, 15))
+
+    for i, geom in enumerate(families):
+        mask = geom['mask_3d']
+        ax = fig.add_subplot(2, 3, i + 1, projection='3d')
+
+        colors = np.empty(mask.shape, dtype=object)
+        colors[mask] = '#F08A5D' if not use_adobe else COLORS[i % len(COLORS)]
+
+        ax.voxels(mask, facecolors=colors, edgecolor='k', linewidth=0.1, alpha=0.9)
+        ax.set_title(
+            f"{geom['geometry_type']} | vf={geom.get('volume_fraction_actual', 0):.2f}",
+            fontsize=16
+        )
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z (Thickness)')
+        ax.view_init(elev=30, azim=45)
+
+    plt.tight_layout()
+
+    os.makedirs(os.path.join(RESULTS_DIR, 'figures'), exist_ok=True)
+    save_path = os.path.join(RESULTS_DIR, 'figures', 'structured_families_preview.png')
+    fig.savefig(save_path, dpi=300, bbox_inches='tight')
+    print(f"Saved visualization to: {save_path}")
+
+
 def plot_single_structure(geom, sim_id):
     """
     Utility function to plot and save a single 3D structure during massive generation.
@@ -90,7 +154,8 @@ def plot_single_structure(geom, sim_id):
     
     ax.voxels(mask, facecolors=colors, edgecolor='k', linewidth=0.1, alpha=0.9)
     
-    ax.set_title(f"Structure: {sim_id}\nVol Frac: {geom.get('volume_fraction_target', 0):.2f}", fontsize=12)
+    vol_frac = geom.get('volume_fraction_actual', geom.get('volume_fraction_target', 0))
+    ax.set_title(f"Structure: {sim_id}\nType: {geom.get('geometry_type')} | Vol Frac: {vol_frac:.2f}", fontsize=12)
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z (Thickness)')
@@ -105,3 +170,4 @@ def plot_single_structure(geom, sim_id):
 
 if __name__ == '__main__':
     plot_styles()
+    plot_structured_families()
