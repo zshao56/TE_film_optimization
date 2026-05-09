@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
+from torch.utils.tensorboard import SummaryWriter
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
@@ -57,6 +58,11 @@ def train_model(args):
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
 
+    # TensorBoard Writer
+    run_dir = os.path.join(project_root, 'runs', 'thermonet_training')
+    writer = SummaryWriter(log_dir=run_dir)
+    print(f"\n[INFO] TensorBoard logging enabled. Run `tensorboard --logdir runs` to view real-time charts.")
+
     print("\nStarting Training Loop...")
     best_val_loss = float('inf')
     
@@ -78,6 +84,10 @@ def train_model(args):
             
             train_loss += loss.item() * masks.size(0)
             
+            # Log batch loss to TensorBoard
+            global_step = epoch * len(train_loader) + batch_idx
+            writer.add_scalar('Loss/Train_Batch', loss.item(), global_step)
+            
             if batch_idx % 10 == 0:
                 print(f"Epoch {epoch+1}/{args.epochs} [{batch_idx*len(masks)}/{len(train_dataset)}] Loss: {loss.item():.4f}")
 
@@ -96,6 +106,11 @@ def train_model(args):
         val_loss /= len(val_dataset)
         scheduler.step()
         
+        # Log epoch summaries to TensorBoard
+        writer.add_scalar('Loss/Train_Epoch_Avg', train_loss, epoch)
+        writer.add_scalar('Loss/Val_Epoch_Avg', val_loss, epoch)
+        writer.add_scalar('Learning_Rate', scheduler.get_last_lr()[0], epoch)
+        
         print(f"==> Epoch {epoch+1} Summary: Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | LR: {scheduler.get_last_lr()[0]:.6f}")
         
         # Save Best Model
@@ -104,6 +119,9 @@ def train_model(args):
             save_path = os.path.join(save_dir, 'best_thermonet.pth')
             torch.save(model.state_dict(), save_path)
             print(f"    [*] Best model saved to {save_path} (Val Loss: {best_val_loss:.4f})")
+
+    writer.close()
+    print("Training finished.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train the 3D CNN Surrogate Model")
