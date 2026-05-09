@@ -28,6 +28,61 @@ TE_film_optimization/
 └── database_temperature_difference_protocol.md # Core rules for simulation setup and validation
 ```
 
+## 🔄 Project Pipeline: From Physics to Inverse Design
+
+The ultimate goal of this project is **Inverse Design**: given constraints like film thickness and environmental temperatures, what is the theoretical optimal 3D shape that maximizes the temperature difference? We achieve this through a rigorous three-phase pipeline:
+
+```mermaid
+flowchart TD
+    %% Styling
+    classDef phase fill:#f9f9f9,stroke:#333,stroke-width:2px,color:#000,font-weight:bold;
+    classDef data fill:#e1f5fe,stroke:#1565c0,color:#000;
+    classDef model fill:#e8f5e9,stroke:#2e7d32,color:#000;
+    classDef action fill:#fff3e0,stroke:#f57c00,color:#000;
+    classDef highlight fill:#ffe0b2,stroke:#e65100,stroke-width:2px,color:#000,font-weight:bold;
+
+    subgraph Phase1 [Phase 1: High-Fidelity Data Generation]
+        direction TB
+        A1[Randomize Environment\nThickness, K-values, Temperatures]:::action --> B1
+        A2[Parameterized Geometry\nCurved Wedge, Step, Double-Layer]:::action --> B1
+        B1{3D FDM Solver\n(Computational Cost: High)}:::model --> C1
+        C1[(50,000 High-Fidelity Samples\nmetadata.csv + 3D .h5)]:::data
+    end
+
+    subgraph Phase2 [Phase 2: Forward Surrogate Model Training]
+        direction TB
+        C1 --> D1(Dataset Split 80/10/10)
+        D1 --> E1[3D CNN Branch\nSpatial Topology]:::model
+        D1 --> E2[MLP Branch\nPhysical Params]:::model
+        E1 --> F1((Fusion Block))
+        E2 --> F1
+        F1 --> G1[Predict In-plane ΔT]:::data
+        G1 -->|MSE Loss / Backpropagation| E1
+        G1 -->|Save Best Weights| H1[Millisecond AI Referee\nThermoNet]:::highlight
+    end
+
+    subgraph Phase3 [Phase 3: Ultimate Goal - Inverse Design]
+        direction TB
+        I1[/User Input Constraints:\nFixed thickness & Temperatures/]:::data --> J1
+        J1[AI Optimizer\nGenetic Algorithm / Gradient Ascent]:::action -->|1. Generate 100k candidate shapes| K1
+        H1 -->|Deploy| K1{AI Referee Scoring\n(Cost: 1ms/inference)}:::highlight
+        K1 -->|2. Return Predicted ΔT| J1
+        J1 -->|3. Evolve over generations| L1[/Output: Theoretical Max ΔT\nand Optimal 3D Geometry/]:::data
+    end
+
+    %% Cross-phase links
+    Phase1 ===> Phase2
+    Phase2 ===> Phase3
+    
+    %% Validation Loop
+    L1 -.->|Final High-Fidelity Verification| B1
+```
+
+### Pipeline Breakdown
+1. **Phase 1 (Data Generation)**: We strictly constrain geometric generators to physical rules and utilize our custom FDM solver to generate a massive, noise-free database. This establishes the absolute physical ground truth.
+2. **Phase 2 (Forward Training)**: We train a Multi-modal neural network (`ThermoNet`). The 3D CNN branch learns the spatial geometry, while the MLP branch understands the thermodynamic context. Once converged, this acts as a surrogate solver that is roughly 10,000x faster than traditional FEM.
+3. **Phase 3 (Inverse Design)**: By deploying the trained surrogate model as a lightning-fast "fitness function", we can unleash Genetic Algorithms or Gradient Ascent to comb through millions of complex topological variations in seconds, hunting down the exact 3D architecture that yields the ultimate thermal gradient.
+
 ## 🛠 Installation
 
 Requires **Python 3.8+**.
