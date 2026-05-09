@@ -24,32 +24,33 @@ class ThermoNetFusion(nn.Module):
         
         # 1. 3D CNN Branch (Processing 50x50x20 Voxel Mask)
         # Input: (B, 1, 50, 50, 20)
+        # Upgraded capacity for 50,000 dataset
         self.cnn_branch = nn.Sequential(
-            ConvBlock3D(1, 16, pool=True),    # Output: (B, 16, 25, 25, 10)
-            ConvBlock3D(16, 32, pool=True),   # Output: (B, 32, 12, 12, 5)
-            ConvBlock3D(32, 64, pool=False),  # Output: (B, 64, 12, 12, 5)
-            nn.AdaptiveAvgPool3d(1),          # Output: (B, 64, 1, 1, 1) - Global Average Pooling
-            nn.Flatten()                      # Output: (B, 64)
+            ConvBlock3D(1, 32, pool=True),    # Output: (B, 32, 25, 25, 10)
+            ConvBlock3D(32, 64, pool=True),   # Output: (B, 64, 12, 12, 5)
+            ConvBlock3D(64, 128, pool=False), # Output: (B, 128, 12, 12, 5)
+            nn.AdaptiveAvgPool3d(1),          # Output: (B, 128, 1, 1, 1) - Global Average Pooling
+            nn.Flatten()                      # Output: (B, 128)
         )
         
         # 2. Scalar MLP Branch (Processing Physical Params)
         # Input: (B, 5) -> [h, k_low, k_high, T_hot, T_air]
         self.mlp_branch = nn.Sequential(
-            nn.Linear(scalar_dim, 32),
+            nn.Linear(scalar_dim, 64),
             nn.ReLU(inplace=True),
-            nn.Linear(32, 32),
+            nn.Linear(64, 32),
             nn.ReLU(inplace=True)
         )
         
         # 3. Fusion Block
-        # Combines CNN feature vector (64) + MLP feature vector (32) = 96
+        # Combines CNN feature vector (128) + MLP feature vector (32) = 160
         self.fusion_head = nn.Sequential(
-            nn.Linear(64 + 32, 64),
+            nn.Linear(128 + 32, 128),
             nn.ReLU(inplace=True),
-            nn.Dropout(0.2),
-            nn.Linear(64, 32),
+            nn.Dropout(0.3),
+            nn.Linear(128, 64),
             nn.ReLU(inplace=True),
-            nn.Linear(32, 1)  # Predicts delta_T_parallel
+            nn.Linear(64, 1)  # Predicts delta_T_parallel
         )
 
     def forward(self, mask_3d, scalars):
