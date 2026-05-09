@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.sparse as sp
-from scipy.sparse.linalg import spsolve
+from scipy.sparse.linalg import spsolve, bicgstab, LinearOperator
+import scipy.sparse.linalg as spla
 import time
 
 class Custom3DFDMSolver:
@@ -181,11 +182,35 @@ class Custom3DFDMSolver:
         A = sp.coo_matrix((data, (row, col)), shape=(N, N)).tocsr()
         b = b_matrix.ravel()
         
-        print(f"Matrix built in {time.time() - t0:.2f} s. Solving system (N={N})...")
+        # Performance logging for debug
+        # print(f"Matrix built in {time.time() - t0:.2f} s. Solving system (N={N})...")
         t0 = time.time()
         
-        T_vec = spsolve(A, b)
-        print(f"System solved in {time.time() - t0:.2f} s.")
+        # PERFORMANCE OPTIMIZATION: 
+        # `spsolve` (direct solver) is too slow for 3D matrices > 40,000 nodes, especially on Windows where memory/cache behaves differently.
+        # We switch to an iterative solver `bicgstab` with Incomplete LU (ILU) preconditioning.
+        try:
+            # 1. Create ILU preconditioner
+            ilu = spla.spilu(A, drop_tol=1e-4, fill_factor=10)
+            M_x = lambda x: ilu.solve(x)
+            M = spla.LinearOperator((N, N), M_x)
+            
+            # 2. Iterative solve
+            T_vec, info = spla.bicgstab(A, b, M=M, tol=1e-5, maxiter=3000)
+            
+            if info > 0:
+                print(f"Warning: bicgstab did not converge within maxiter ({info}). Falling back to direct solver.")
+                T_vec = spsolve(A, b)
+            elif info < 0:
+                print(f"Warning: bicgstab illegal input/breakdown ({info}). Falling back to direct solver.")
+                T_vec = spsolve(A, b)
+                
+        except RuntimeError:
+            # If ILU fails (e.g. exactly singular matrix layout), fallback to direct solver
+            print("Warning: ILU preconditioner failed. Falling back to direct solver.")
+            T_vec = spsolve(A, b)
+            
+        # print(f"System solved in {time.time() - t0:.2f} s.")
         
         T_field = T_vec.reshape((nx, ny, nz))
         

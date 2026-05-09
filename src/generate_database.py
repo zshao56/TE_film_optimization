@@ -153,6 +153,8 @@ def build_massive_database(num_samples, max_workers=None, mode='mixed', structur
     fail_count = 0
     
     # Use ProcessPoolExecutor to run physical simulations in parallel
+    # On Windows, ProcessPoolExecutor must be inside the if __name__ == '__main__' guard,
+    # which it effectively is because build_massive_database is called from there.
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(generate_single_sample, task): task for task in tasks}
         
