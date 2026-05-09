@@ -3,6 +3,7 @@ import sys
 import uuid
 import argparse
 import numpy as np
+import pandas as pd
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from tqdm import tqdm # Requires pip install tqdm
 
@@ -101,7 +102,7 @@ def generate_single_sample(args):
 
 def build_massive_database(num_samples, max_workers=None, mode='mixed', structured_ratio=0.8, seed=None):
     """
-    Generate a large database using multiprocessing.
+    Generate a large database using multiprocessing, with auto-resume capability.
     """
     if not 0.0 <= structured_ratio <= 1.0:
         raise ValueError("structured_ratio must be between 0 and 1.")
@@ -110,18 +111,42 @@ def build_massive_database(num_samples, max_workers=None, mode='mixed', structur
     Lx, Ly = 0.01, 0.01 # 1cm x 1cm
     nx, ny, nz = 50, 50, 20
     
-    print(f"Starting database generation: {num_samples} samples.")
+    # 1. Check existing database for resume capability
+    metadata_path = os.path.join(current_dir, '..', 'data', 'simulations', 'metadata.csv')
+    existing_count = 0
+    if os.path.exists(metadata_path):
+        try:
+            df = pd.read_csv(metadata_path)
+            # Count only successful runs
+            existing_count = len(df[df['qc_pass'] == True])
+        except Exception as e:
+            print(f"Warning: Could not read {metadata_path}. Starting from scratch. Error: {e}")
+            existing_count = 0
+
+    remaining_samples = num_samples - existing_count
+
+    if remaining_samples <= 0:
+        print(f"Database already contains {existing_count} successful samples. Target of {num_samples} reached. Exiting.")
+        return
+
+    print(f"Target database size: {num_samples} samples.")
+    if existing_count > 0:
+        print(f"Found {existing_count} existing samples. Resuming and generating {remaining_samples} more...")
+    else:
+        print(f"Starting fresh database generation: {remaining_samples} samples.")
+        
     print(f"Generation mode: {mode}. Structured ratio for mixed mode: {structured_ratio:.2f}.")
     if max_workers:
         print(f"Using {max_workers} CPU cores.")
     
     root_sequence = np.random.SeedSequence(seed)
+    # Spawn total needed (existing + remaining) to maintain reproducibility offset
     child_seeds = root_sequence.spawn(num_samples)
 
-    # Prepare arguments for each task, including the index and reproducible seed
+    # Prepare arguments for each task, offset by existing_count to avoid repeating seeds
     tasks = [
-        (i, Lx, Ly, nx, ny, nz, mode, structured_ratio, int(child_seeds[i].generate_state(1)[0]))
-        for i in range(num_samples)
+        (existing_count + i, Lx, Ly, nx, ny, nz, mode, structured_ratio, int(child_seeds[existing_count + i].generate_state(1)[0]))
+        for i in range(remaining_samples)
     ]
     
     success_count = 0
@@ -131,7 +156,7 @@ def build_massive_database(num_samples, max_workers=None, mode='mixed', structur
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(generate_single_sample, task): task for task in tasks}
         
-        for future in tqdm(as_completed(futures), total=num_samples, desc="Simulating"):
+        for future in tqdm(as_completed(futures), total=remaining_samples, desc="Simulating"):
             success, result = future.result()
             if success:
                 success_count += 1
