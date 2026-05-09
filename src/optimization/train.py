@@ -97,11 +97,18 @@ def train_model(args):
         model.eval()
         val_loss = 0.0
         with torch.no_grad():
-            for masks, scalars, targets in val_loader:
+            for batch_idx, (masks, scalars, targets) in enumerate(val_loader):
                 masks, scalars, targets = masks.to(device), scalars.to(device), targets.to(device)
                 outputs = model(masks, scalars)
                 loss = criterion(outputs, targets)
                 val_loss += loss.item() * masks.size(0)
+                
+                # Log validation batch loss to TensorBoard
+                val_global_step = epoch * len(val_loader) + batch_idx
+                writer.add_scalar('Loss/Val_Batch', loss.item(), val_global_step)
+                
+                if batch_idx % 10 == 0:
+                    print(f"Epoch {epoch+1}/{args.epochs} [Val][{batch_idx*len(masks)}/{len(val_dataset)}] Loss: {loss.item():.4f}")
                 
         val_loss /= len(val_dataset)
         scheduler.step()
