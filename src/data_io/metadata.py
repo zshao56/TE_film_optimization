@@ -2,6 +2,9 @@ import os
 import sys
 import pandas as pd
 import h5py
+import csv
+import time
+import random
 from datetime import datetime
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -30,7 +33,7 @@ def ensure_dirs():
 
 def append_metadata(record: dict):
     """
-    Append a simulation record to metadata.csv.
+    Append a simulation record to metadata.csv safely across multiple processes.
     """
     ensure_dirs()
     
@@ -39,18 +42,31 @@ def append_metadata(record: dict):
         if col not in record:
             record[col] = None
             
-    df_new = pd.DataFrame([record])
+    # Remove extra keys that shouldn't be in the CSV
+    clean_record = {k: v for k, v in record.items() if k in REQUIRED_COLUMNS}
     
-    if os.path.exists(METADATA_FILE):
-        df_existing = pd.read_csv(METADATA_FILE)
-        df_combined = pd.concat([df_existing, df_new], ignore_index=True)
-    else:
-        df_combined = df_new
-        
-    # Ensure column order
-    df_combined = df_combined[[col for col in REQUIRED_COLUMNS if col in df_combined.columns]]
-    df_combined.to_csv(METADATA_FILE, index=False)
-    print(f"Appended record {record.get('simulation_id')} to {METADATA_FILE}")
+    file_exists = os.path.exists(METADATA_FILE)
+    
+    # Retry mechanism for Windows file locking issues during concurrent process writes
+    max_retries = 20
+    for i in range(max_retries):
+        try:
+            with open(METADATA_FILE, 'a', newline='', encoding='utf-8') as f:
+                writer = csv.DictWriter(f, fieldnames=REQUIRED_COLUMNS)
+                # Write header if file is totally new or empty
+                if not file_exists or os.path.getsize(METADATA_FILE) == 0:
+                    writer.writeheader()
+                    file_exists = True # Prevent writing header multiple times
+                
+                writer.writerow(clean_record)
+            # print(f"Appended record {record.get('simulation_id')} to {METADATA_FILE}")
+            break
+        except Exception as e:
+            if i == max_retries - 1:
+                print(f"CRITICAL: Failed to write metadata after {max_retries} retries: {e}")
+                raise
+            # Backoff randomly to avoid collision sync
+            time.sleep(random.uniform(0.01, 0.1))
 
 def save_h5_fields(simulation_id: str, data: dict):
     """
