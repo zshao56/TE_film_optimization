@@ -128,6 +128,53 @@ Evaluation command after training:
 python src/optimization/evaluate.py --split test --seed 42 --batch-size 64 --workers 4
 ```
 
+Training result:
+
+```text
+Stopped at epoch: 26 / 80
+Early stopping patience: 12 epochs
+Best validation loss: 0.1633
+Final epoch train loss: 0.2011
+Final epoch val loss: 0.1749
+Final learning rate: 0.000075
+```
+
+Test metrics:
+
+```text
+count: 5000
+MAE: 0.983772 K
+RMSE: 1.385167 K
+bias: 0.113681 K
+R2: 0.838554
+```
+
+Top 10% true delta_T region:
+
+```text
+true delta_T cutoff: 8.757979 K
+count: 500
+MAE: 2.136587 K
+RMSE: 2.651470 K
+bias: -1.438906 K
+R2: 0.363205
+```
+
+Ranking metrics:
+
+```text
+top overlap: 380 / 500
+top recall: 0.760
+top precision: 0.760
+Spearman rank correlation: 0.910944
+```
+
+Interpretation:
+
+```text
+This run slightly improves the high-delta-T MAE and bias compared with the first run, but the improvement is small. Overall MAE, RMSE, R2, and Spearman ranking are worse than the first run. This checkpoint should not replace the first run as the default surrogate.
+```
+
 Pass criteria before moving to surrogate-assisted inverse design:
 
 ```text
