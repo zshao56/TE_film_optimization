@@ -138,12 +138,17 @@ python src/optimization/evaluate.py --split test --seed 42
 python src/optimization/run_experiments.py --penalties 0.05 0.1 0.15 0.2 0.25 --batch-size 128
 ```
 
+如果要让本地 advisor 根据每轮评估结果自动决定下一轮参数：
+```bash
+python src/optimization/run_experiments.py --adaptive --max-adaptive-runs 4 --batch-size 128
+```
+
 如果已经手动跑完一轮训练，并且当前 checkpoint 位于 `results/models/best_thermonet.pth`，可先导入这轮结果到自动排行榜：
 ```bash
 python src/optimization/run_experiments.py --import-current-run thermonet_v6_underpredict_0p1_bs128 --no-sweep
 ```
 
-自动实验输出位于 `results/experiments/`，其中 `leaderboard.csv` 会按综合评分排序；每个 run 都会保留独立的 checkpoint、评估指标、预测 CSV 和图像，避免后续训练覆盖 `best_thermonet.pth`。
+自动实验输出位于 `results/experiments/`，其中 `leaderboard.csv` 会按综合评分排序，`advisor_decisions.json` 会记录每一步的决策理由；每个 run 都会保留独立的 checkpoint、评估指标、预测 CSV 和图像，避免后续训练覆盖 `best_thermonet.pth`。
 
 ## 📐 网格无关性与网格选择 (Grid Independence)
 

@@ -138,12 +138,17 @@ To let the training machine automatically sweep high-`delta_T_parallel` underpre
 python src/optimization/run_experiments.py --penalties 0.05 0.1 0.15 0.2 0.25 --batch-size 128
 ```
 
+To let the local advisor inspect each evaluation result and choose the next run automatically:
+```bash
+python src/optimization/run_experiments.py --adaptive --max-adaptive-runs 4 --batch-size 128
+```
+
 If a manual training run has already finished and the current checkpoint is still at `results/models/best_thermonet.pth`, import that run into the experiment leaderboard first:
 ```bash
 python src/optimization/run_experiments.py --import-current-run thermonet_v6_underpredict_0p1_bs128 --no-sweep
 ```
 
-Automated experiment outputs are written under `results/experiments/`. The script preserves each run's checkpoint, evaluation metrics, prediction CSVs, figures, and a ranked `leaderboard.csv`, so later training runs do not overwrite the model being compared.
+Automated experiment outputs are written under `results/experiments/`. The script preserves each run's checkpoint, evaluation metrics, prediction CSVs, figures, a ranked `leaderboard.csv`, and advisor reasoning in `advisor_decisions.json`, so later training runs do not overwrite the model being compared.
 
 ## 📐 Grid Independence and Mesh Selection
 

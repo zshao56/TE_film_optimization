@@ -436,8 +436,15 @@ Run an automatic underprediction-penalty sweep:
 python src/optimization/run_experiments.py --penalties 0.05 0.1 0.15 0.2 0.25 --batch-size 128
 ```
 
+Run advisor-driven adaptive experiments:
+
+```powershell
+python src/optimization/run_experiments.py --adaptive --max-adaptive-runs 4 --batch-size 128
+```
+
 Primary output:
 
 ```text
 results/experiments/leaderboard.csv
+results/experiments/advisor_decisions.json
 ```
