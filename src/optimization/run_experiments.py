@@ -168,6 +168,10 @@ def _score_metrics(metrics):
     score += 20.0 * spearman
     score -= 8.0 * top_mae
     score -= 5.0 * top_bias_abs
+    if overall_r2 < 0.84:
+        score -= 20.0 + 100.0 * (0.84 - overall_r2)
+    if top_bias_abs > 0.8:
+        score -= 10.0 + 5.0 * (top_bias_abs - 0.8)
     if overall_r2 >= 0.88:
         score += 10.0
     if top_mae <= 1.5:
@@ -375,6 +379,19 @@ def _nearest_untried(candidate, tried, args):
     return None
 
 
+def _directional_untried(start, tried, args, direction):
+    if direction not in (-1, 1):
+        raise ValueError("direction must be -1 or 1.")
+    step = args.adaptive_step
+    for i in range(1, 10):
+        value = _round_penalty(start + direction * step * i)
+        if value < args.min_penalty or value > args.max_penalty:
+            break
+        if value not in tried:
+            return value
+    return None
+
+
 def _meets_pass_criteria(row, args):
     return (
         row["overall_r2"] >= args.target_overall_r2
@@ -422,32 +439,37 @@ def _advisor_decision(rows, args):
 
     if top_bias < -args.target_top_bias_abs:
         step = args.adaptive_step * 2.0 if top_bias < -1.0 else args.adaptive_step
-        next_penalty = _nearest_untried(latest_penalty + step, tried, args)
+        next_penalty = _directional_untried(latest_penalty, tried, args, direction=1)
+        if next_penalty is not None and step > args.adaptive_step:
+            larger_step = _round_penalty(latest_penalty + step)
+            if larger_step not in tried and larger_step <= args.max_penalty:
+                next_penalty = larger_step
         reason = (
             f"High-delta-T region is still underpredicted "
             f"(top_bias={top_bias:.4f} K < -{args.target_top_bias_abs:.4f} K). "
             f"Increase the underprediction penalty."
         )
     elif top_bias > args.target_top_bias_abs:
-        next_penalty = _nearest_untried(latest_penalty - args.adaptive_step, tried, args)
+        next_penalty = _directional_untried(latest_penalty, tried, args, direction=-1)
         reason = (
             f"High-delta-T region is overcorrected "
             f"(top_bias={top_bias:.4f} K > {args.target_top_bias_abs:.4f} K). "
             f"Decrease the underprediction penalty."
         )
     elif overall_r2 < args.min_acceptable_overall_r2:
-        next_penalty = _nearest_untried(latest_penalty - args.adaptive_step, tried, args)
+        next_penalty = _directional_untried(latest_penalty, tried, args, direction=-1)
         reason = (
             f"Top-region bias is acceptable, but overall R2 is too low "
             f"(overall_r2={overall_r2:.4f} < {args.min_acceptable_overall_r2:.4f}). "
             f"Decrease the penalty to recover global accuracy."
         )
     elif top_mae > args.target_top_mae and overall_r2 >= args.min_acceptable_overall_r2:
-        next_penalty = _nearest_untried(latest_penalty + args.adaptive_step, tried, args)
+        direction = 1 if top_bias < 0.0 else -1
+        next_penalty = _directional_untried(latest_penalty, tried, args, direction=direction)
         reason = (
             f"Overall R2 is acceptable and top bias is controlled, but top MAE is still high "
             f"(top_mae={top_mae:.4f} K > {args.target_top_mae:.4f} K). "
-            f"Try a slightly stronger penalty."
+            f"Try a nearby penalty that moves top bias toward zero."
         )
     elif top_recall < args.target_top_recall or top_precision < args.target_top_precision:
         return {
