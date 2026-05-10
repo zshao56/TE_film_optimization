@@ -175,6 +175,68 @@ Interpretation:
 This run slightly improves the high-delta-T MAE and bias compared with the first run, but the improvement is small. Overall MAE, RMSE, R2, and Spearman ranking are worse than the first run. This checkpoint should not replace the first run as the default surrogate.
 ```
 
+## Third Training Run
+
+Goal:
+
+```text
+Test a softer high-delta-T weighting strategy to reduce the over-bias introduced by the second run.
+```
+
+Command:
+
+```powershell
+python src/optimization/train.py --batch-size 32 --epochs 80 --seed 42 --normalize-target --top-quantile 0.9 --top-weight 1.5 --run-name thermonet_v3_top_weight_1p5
+```
+
+Evaluation command after training:
+
+```powershell
+python src/optimization/evaluate.py --split test --seed 42 --batch-size 64 --workers 4
+```
+
+Test metrics:
+
+```text
+count: 5000
+MAE: 0.978504 K
+RMSE: 1.359299 K
+bias: 0.199149 K
+R2: 0.844528
+```
+
+Top 10% true delta_T region:
+
+```text
+true delta_T cutoff: 8.757979 K
+count: 500
+MAE: 2.092051 K
+RMSE: 2.604356 K
+bias: -1.276524 K
+R2: 0.385634
+```
+
+Ranking metrics:
+
+```text
+top overlap: 381 / 500
+top recall: 0.762
+top precision: 0.762
+Spearman rank correlation: 0.916661
+```
+
+Interpretation:
+
+```text
+This run is better than the second run and slightly improves top-region MAE, bias, R2, and ranking versus the first run. However, overall MAE and R2 are still worse than the first run, and the top-region bias remains too large. This suggests that simple top-region loss weighting alone is not enough.
+```
+
+## Current Decision
+
+```text
+Do not continue blindly extending v2/v3 training. The next useful step is to change the training objective or sampling strategy, then compare against the first run as the baseline.
+```
+
 Pass criteria before moving to surrogate-assisted inverse design:
 
 ```text
