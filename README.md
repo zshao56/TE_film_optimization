@@ -121,6 +121,11 @@ Train the surrogate model:
 python src/optimization/train.py --batch-size 32 --epochs 50 --seed 42
 ```
 
+If the first run clearly underestimates the high `delta_T_parallel` region, use the second-stage training setup:
+```bash
+python src/optimization/train.py --batch-size 32 --epochs 80 --seed 42 --normalize-target --top-quantile 0.9 --top-weight 3.0
+```
+
 After training, evaluate the model on the held-out test split before adding more epochs:
 ```bash
 python src/optimization/evaluate.py --split test --seed 42

@@ -35,13 +35,13 @@ def _device_from_arg(device_arg):
     return torch.device("cpu")
 
 
-def _load_state_dict(model_path, device):
+def _load_checkpoint(model_path, device):
     checkpoint = torch.load(model_path, map_location=device)
     if isinstance(checkpoint, dict) and "state_dict" in checkpoint:
-        return checkpoint["state_dict"]
+        return checkpoint["state_dict"], checkpoint
     if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
-        return checkpoint["model_state_dict"]
-    return checkpoint
+        return checkpoint["model_state_dict"], checkpoint
+    return checkpoint, {"normalize_target": False}
 
 
 def _make_split(dataset, split_name, seed):
@@ -184,9 +184,16 @@ def evaluate_model(args):
     loader = DataLoader(split_dataset, **loader_kwargs)
 
     model = ThermoNetFusion(scalar_dim=5).to(device)
-    model.load_state_dict(_load_state_dict(model_path, device))
+    state_dict, checkpoint_meta = _load_checkpoint(model_path, device)
+    model.load_state_dict(state_dict)
 
     y_true, y_pred = _evaluate_loader(model, loader, device)
+    if checkpoint_meta.get("normalize_target", False):
+        target_mean = float(checkpoint_meta["target_mean"])
+        target_std = float(checkpoint_meta["target_std"])
+        y_pred = y_pred * target_std + target_mean
+        print(f"Checkpoint output unnormalized with target mean={target_mean:.6g}, std={target_std:.6g}")
+
     metadata = dataset.data_frame.iloc[split_indices].reset_index(drop=True).copy()
     predictions = metadata[
         ["simulation_id", "geometry_type", "thickness_h", "k_low", "k_high", "T_hot", "T_air"]

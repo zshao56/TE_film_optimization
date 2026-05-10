@@ -121,6 +121,11 @@ python src/generate_database.py --samples 50000 --cores 8 --mode mixed --structu
 python src/optimization/train.py --batch-size 32 --epochs 50 --seed 42
 ```
 
+如果第一轮模型在高 `delta_T_parallel` 区域明显低估，可启动第二轮训练配置：
+```bash
+python src/optimization/train.py --batch-size 32 --epochs 80 --seed 42 --normalize-target --top-quantile 0.9 --top-weight 3.0
+```
+
 训练完成后，先在独立测试集上评估代理模型，而不是直接继续加 epoch：
 ```bash
 python src/optimization/evaluate.py --split test --seed 42

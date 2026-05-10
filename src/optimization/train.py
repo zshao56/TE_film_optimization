@@ -7,7 +7,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
-from torch.utils.tensorboard import SummaryWriter
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
@@ -57,7 +56,31 @@ def export_metadata_reports(dataset, split_subsets, report_dir):
     print(f"[INFO] Metadata with split labels saved to {metadata_path}")
     print(f"[INFO] Metadata split summary saved to {summary_path}")
 
+
+def unpack_batch(batch):
+    if len(batch) == 4:
+        masks, scalars, targets, weights = batch
+        return masks, scalars, targets, weights
+    masks, scalars, targets = batch
+    return masks, scalars, targets, None
+
+
+def weighted_mse_loss(outputs, targets, weights=None):
+    loss = (outputs - targets) ** 2
+    if weights is None:
+        return loss.mean()
+    return (loss * weights).sum() / weights.sum().clamp_min(1e-12)
+
+
 def train_model(args):
+    try:
+        from torch.utils.tensorboard import SummaryWriter
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError(
+            "TensorBoard is required for training logs. Install dependencies with "
+            "`pip install -r requirements.txt`."
+        ) from exc
+
     set_seed(args.seed)
 
     # Setup Device
@@ -73,7 +96,14 @@ def train_model(args):
         return
 
     print("Loading dataset (this may take a moment to scan the CSV)...")
-    dataset = TEFilmDataset(metadata_csv=metadata_csv, root_dir=root_dir)
+    dataset = TEFilmDataset(
+        metadata_csv=metadata_csv,
+        root_dir=root_dir,
+        normalize_target=args.normalize_target,
+        return_weight=args.top_weight > 1.0,
+        top_quantile=args.top_quantile,
+        top_weight=args.top_weight,
+    )
     total_samples = len(dataset)
     print(f"Total successful simulations found: {total_samples}")
 
@@ -91,6 +121,13 @@ def train_model(args):
     )
 
     print(f"Splits -> Train: {len(train_dataset)}, Val: {len(val_dataset)}, Test: {len(test_dataset)}")
+    if args.normalize_target:
+        print(f"Target normalization enabled: mean={dataset.target_mean:.6g}, std={dataset.target_std:.6g}")
+    if dataset.top_weight_cutoff is not None:
+        print(
+            f"Top-region weighted loss enabled: delta_T >= {dataset.top_weight_cutoff:.6g} K "
+            f"gets weight {args.top_weight:.3g}"
+        )
 
     report_dir = os.path.join(project_root, args.metadata_report_dir)
     export_metadata_reports(
@@ -111,7 +148,6 @@ def train_model(args):
 
     # Model, Loss, Optimizer
     model = ThermoNetFusion(scalar_dim=5).to(device)
-    criterion = nn.MSELoss()
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
@@ -137,12 +173,15 @@ def train_model(args):
         # --- Training ---
         model.train()
         train_loss = 0.0
-        for batch_idx, (masks, scalars, targets) in enumerate(train_loader):
+        for batch_idx, batch in enumerate(train_loader):
+            masks, scalars, targets, weights = unpack_batch(batch)
             masks, scalars, targets = masks.to(device), scalars.to(device), targets.to(device)
+            if weights is not None:
+                weights = weights.to(device)
             
             optimizer.zero_grad()
             outputs = model(masks, scalars)
-            loss = criterion(outputs, targets)
+            loss = weighted_mse_loss(outputs, targets, weights)
             loss.backward()
             if args.grad_clip > 0:
                 nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
@@ -163,10 +202,11 @@ def train_model(args):
         model.eval()
         val_loss = 0.0
         with torch.no_grad():
-            for batch_idx, (masks, scalars, targets) in enumerate(val_loader):
+            for batch_idx, batch in enumerate(val_loader):
+                masks, scalars, targets, _weights = unpack_batch(batch)
                 masks, scalars, targets = masks.to(device), scalars.to(device), targets.to(device)
                 outputs = model(masks, scalars)
-                loss = criterion(outputs, targets)
+                loss = weighted_mse_loss(outputs, targets)
                 val_loss += loss.item() * masks.size(0)
                 
                 # Log validation batch loss to TensorBoard
@@ -196,7 +236,21 @@ def train_model(args):
             best_val_loss = val_loss
             epochs_without_improvement = 0
             save_path = os.path.join(save_dir, 'best_thermonet.pth')
-            torch.save(model.state_dict(), save_path)
+            torch.save(
+                {
+                    'state_dict': model.state_dict(),
+                    'normalize_target': args.normalize_target,
+                    'target_mean': float(dataset.target_mean),
+                    'target_std': float(dataset.target_std),
+                    'scalar_cols': dataset.scalar_cols,
+                    'target_col': dataset.target_col,
+                    'seed': args.seed,
+                    'top_quantile': args.top_quantile,
+                    'top_weight': args.top_weight,
+                    'top_weight_cutoff': dataset.top_weight_cutoff,
+                },
+                save_path,
+            )
             print(f"    [*] Best model saved to {save_path} (Val Loss: {best_val_loss:.4f})")
         else:
             epochs_without_improvement += 1
@@ -224,6 +278,9 @@ if __name__ == '__main__':
     parser.add_argument('--run-name', type=str, default='thermonet_training', help='TensorBoard run directory under runs/')
     parser.add_argument('--metadata-report-dir', type=str, default=os.path.join('results', 'metadata'), help='Directory for split-labeled metadata reports')
     parser.add_argument('--workers', type=int, default=4, help='Number of DataLoader workers')
+    parser.add_argument('--normalize-target', action='store_true', help='Train on Z-score normalized delta_T targets')
+    parser.add_argument('--top-quantile', type=float, default=0.9, help='High delta_T quantile used for optional weighted loss')
+    parser.add_argument('--top-weight', type=float, default=1.0, help='Loss weight for samples above --top-quantile; 1 disables weighting')
     
     args = parser.parse_args()
     train_model(args)
