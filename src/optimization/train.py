@@ -1,6 +1,8 @@
 import os
 import sys
 import argparse
+import random
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -15,7 +17,49 @@ project_root = os.path.dirname(os.path.dirname(current_dir))
 from dataset import TEFilmDataset
 from models import ThermoNetFusion
 
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+def export_metadata_reports(dataset, split_subsets, report_dir):
+    os.makedirs(report_dir, exist_ok=True)
+
+    metadata = dataset.data_frame.copy()
+    metadata.insert(0, 'dataset_index', np.arange(len(metadata)))
+    metadata.insert(1, 'split', 'unused')
+
+    for split_name, subset in split_subsets.items():
+        metadata.loc[list(subset.indices), 'split'] = split_name
+
+    metadata_path = os.path.join(report_dir, 'metadata_with_split.csv')
+    metadata.to_csv(metadata_path, index=False)
+
+    summary_cols = dataset.scalar_cols + [dataset.target_col]
+    summary = metadata.groupby('split')[summary_cols].agg(['count', 'mean', 'std', 'min', 'max'])
+    summary.columns = ['_'.join(col).strip() for col in summary.columns.values]
+    summary = summary.reset_index()
+    summary_path = os.path.join(report_dir, 'metadata_split_summary.csv')
+    summary.to_csv(summary_path, index=False)
+
+    target_cols = [
+        'split',
+        f'{dataset.target_col}_count',
+        f'{dataset.target_col}_mean',
+        f'{dataset.target_col}_std',
+        f'{dataset.target_col}_min',
+        f'{dataset.target_col}_max'
+    ]
+    print("\nMetadata split target summary:")
+    print(summary[target_cols].to_string(index=False, float_format=lambda x: f"{x:.4f}"))
+    print(f"[INFO] Metadata with split labels saved to {metadata_path}")
+    print(f"[INFO] Metadata split summary saved to {summary_path}")
+
 def train_model(args):
+    set_seed(args.seed)
+
     # Setup Device
     device = torch.device('cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu'))
     print(f"Using device: {device}")
@@ -43,28 +87,48 @@ def train_model(args):
     test_size = total_samples - train_size - val_size
     train_dataset, val_dataset, test_dataset = random_split(
         dataset, [train_size, val_size, test_size], 
-        generator=torch.Generator().manual_seed(42)
+        generator=torch.Generator().manual_seed(args.seed)
     )
 
     print(f"Splits -> Train: {len(train_dataset)}, Val: {len(val_dataset)}, Test: {len(test_dataset)}")
 
+    report_dir = os.path.join(project_root, args.metadata_report_dir)
+    export_metadata_reports(
+        dataset,
+        {'train': train_dataset, 'val': val_dataset, 'test': test_dataset},
+        report_dir
+    )
+
     # DataLoaders
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers)
-    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.workers)
+    loader_kwargs = {
+        'batch_size': args.batch_size,
+        'num_workers': args.workers,
+        'pin_memory': device.type == 'cuda',
+        'persistent_workers': args.workers > 0
+    }
+    train_loader = DataLoader(train_dataset, shuffle=True, **loader_kwargs)
+    val_loader = DataLoader(val_dataset, shuffle=False, **loader_kwargs)
 
     # Model, Loss, Optimizer
     model = ThermoNetFusion(scalar_dim=5).to(device)
     criterion = nn.MSELoss()
-    optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+    optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode='min',
+        factor=args.lr_factor,
+        patience=args.lr_patience,
+        min_lr=args.min_lr
+    )
 
     # TensorBoard Writer
-    run_dir = os.path.join(project_root, 'runs', 'thermonet_training')
+    run_dir = os.path.join(project_root, 'runs', args.run_name)
     writer = SummaryWriter(log_dir=run_dir)
     print(f"\n[INFO] TensorBoard logging enabled. Run `tensorboard --logdir runs` to view real-time charts.")
 
     print("\nStarting Training Loop...")
     best_val_loss = float('inf')
+    epochs_without_improvement = 0
     
     save_dir = os.path.join(project_root, 'results', 'models')
     os.makedirs(save_dir, exist_ok=True)
@@ -80,6 +144,8 @@ def train_model(args):
             outputs = model(masks, scalars)
             loss = criterion(outputs, targets)
             loss.backward()
+            if args.grad_clip > 0:
+                nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
             optimizer.step()
             
             train_loss += loss.item() * masks.size(0)
@@ -111,21 +177,33 @@ def train_model(args):
                     print(f"Epoch {epoch+1}/{args.epochs} [Val][{batch_idx*len(masks)}/{len(val_dataset)}] Loss: {loss.item():.4f}")
                 
         val_loss /= len(val_dataset)
-        scheduler.step()
+        previous_lr = optimizer.param_groups[0]['lr']
+        scheduler.step(val_loss)
+        current_lr = optimizer.param_groups[0]['lr']
         
         # Log epoch summaries to TensorBoard
         writer.add_scalar('Loss/Train_Epoch_Avg', train_loss, epoch)
         writer.add_scalar('Loss/Val_Epoch_Avg', val_loss, epoch)
-        writer.add_scalar('Learning_Rate', scheduler.get_last_lr()[0], epoch)
+        writer.add_scalar('Learning_Rate', current_lr, epoch)
         
-        print(f"==> Epoch {epoch+1} Summary: Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | LR: {scheduler.get_last_lr()[0]:.6f}")
+        lr_note = f" | LR: {current_lr:.6f}"
+        if current_lr < previous_lr:
+            lr_note += " (reduced)"
+        print(f"==> Epoch {epoch+1} Summary: Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f}{lr_note}")
         
         # Save Best Model
-        if val_loss < best_val_loss:
+        if val_loss < best_val_loss - args.min_delta:
             best_val_loss = val_loss
+            epochs_without_improvement = 0
             save_path = os.path.join(save_dir, 'best_thermonet.pth')
             torch.save(model.state_dict(), save_path)
             print(f"    [*] Best model saved to {save_path} (Val Loss: {best_val_loss:.4f})")
+        else:
+            epochs_without_improvement += 1
+            print(f"    [!] No validation improvement for {epochs_without_improvement}/{args.patience} epochs")
+            if epochs_without_improvement >= args.patience:
+                print(f"Early stopping triggered. Best Val Loss: {best_val_loss:.4f}")
+                break
 
     writer.close()
     print("Training finished.")
@@ -134,7 +212,17 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train the 3D CNN Surrogate Model")
     parser.add_argument('--batch-size', type=int, default=32, help='Input batch size for training')
     parser.add_argument('--epochs', type=int, default=50, help='Number of epochs to train')
-    parser.add_argument('--lr', type=float, default=1e-3, help='Learning rate')
+    parser.add_argument('--lr', type=float, default=3e-4, help='Learning rate')
+    parser.add_argument('--weight-decay', type=float, default=1e-3, help='AdamW weight decay')
+    parser.add_argument('--patience', type=int, default=12, help='Early stopping patience in epochs')
+    parser.add_argument('--min-delta', type=float, default=1e-4, help='Minimum validation loss improvement')
+    parser.add_argument('--lr-patience', type=int, default=5, help='Epochs without validation improvement before reducing LR')
+    parser.add_argument('--lr-factor', type=float, default=0.5, help='Learning rate reduction factor')
+    parser.add_argument('--min-lr', type=float, default=1e-6, help='Lower bound for learning rate')
+    parser.add_argument('--grad-clip', type=float, default=1.0, help='Max gradient norm; set <= 0 to disable')
+    parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducible splits')
+    parser.add_argument('--run-name', type=str, default='thermonet_training', help='TensorBoard run directory under runs/')
+    parser.add_argument('--metadata-report-dir', type=str, default=os.path.join('results', 'metadata'), help='Directory for split-labeled metadata reports')
     parser.add_argument('--workers', type=int, default=4, help='Number of DataLoader workers')
     
     args = parser.parse_args()
