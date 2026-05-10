@@ -322,6 +322,62 @@ Interrupted v4 bs192 note:
 A batch-size 192 run was manually interrupted during epoch 1 and should not be treated as a completed experiment. The evaluation above corresponds to the completed bs128 checkpoint.
 ```
 
+## Fifth Training Run
+
+Goal:
+
+```text
+Reduce the high-delta-T underprediction penalty from 0.5 to 0.2 to keep the bias improvement while recovering overall accuracy.
+```
+
+Command:
+
+```powershell
+python src/optimization/train.py --batch-size 128 --epochs 80 --seed 42 --normalize-target --top-quantile 0.9 --underpredict-penalty 0.2 --run-name thermonet_v5_underpredict_0p2_bs128
+```
+
+Evaluation command after training:
+
+```powershell
+python src/optimization/evaluate.py --split test --seed 42 --batch-size 128 --workers 4
+```
+
+Test metrics:
+
+```text
+count: 5000
+MAE: 0.957993 K
+RMSE: 1.364937 K
+bias: 0.189765 K
+R2: 0.843236
+```
+
+Top 10% true delta_T region:
+
+```text
+true delta_T cutoff: 8.757979 K
+count: 500
+MAE: 1.932834 K
+RMSE: 2.417620 K
+bias: -0.711206 K
+R2: 0.470577
+```
+
+Ranking metrics:
+
+```text
+top overlap: 381 / 500
+top recall: 0.762
+top precision: 0.762
+Spearman rank correlation: 0.913849
+```
+
+Interpretation:
+
+```text
+This is the best balanced result so far among the underprediction-penalty runs. Compared with v4, it recovers much of the overall accuracy while keeping the top-region bias within the target threshold. It still does not meet the target top-region MAE or top recall/precision criteria, so it is useful as a better surrogate checkpoint but not a final inverse-design model.
+```
+
 Decision rule:
 
 ```text
