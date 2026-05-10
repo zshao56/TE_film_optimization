@@ -257,10 +257,69 @@ Recommended first command:
 python src/optimization/train.py --batch-size 32 --epochs 80 --seed 42 --normalize-target --top-quantile 0.9 --underpredict-penalty 0.5 --run-name thermonet_v4_underpredict_0p5
 ```
 
+Batch-size 128 command used for the first completed v4 test:
+
+```powershell
+python src/optimization/train.py --batch-size 128 --epochs 80 --seed 42 --normalize-target --top-quantile 0.9 --underpredict-penalty 0.5 --run-name thermonet_v4_underpredict_0p5_bs128
+```
+
 Evaluation command after training:
 
 ```powershell
 python src/optimization/evaluate.py --split test --seed 42 --batch-size 64 --workers 4
+```
+
+Completed v4 bs128 training result:
+
+```text
+Stopped at epoch: 44 / 80
+Early stopping patience: 12 epochs
+Best validation loss: 0.2773
+Final epoch train loss: 0.2088
+Final epoch val loss: 0.2903
+Final learning rate: 0.000037
+```
+
+Test metrics:
+
+```text
+count: 5000
+MAE: 1.012976 K
+RMSE: 1.471687 K
+bias: 0.408504 K
+R2: 0.817756
+```
+
+Top 10% true delta_T region:
+
+```text
+true delta_T cutoff: 8.757979 K
+count: 500
+MAE: 1.844950 K
+RMSE: 2.406587 K
+bias: 0.194557 K
+R2: 0.475398
+```
+
+Ranking metrics:
+
+```text
+top overlap: 380 / 500
+top recall: 0.760
+top precision: 0.760
+Spearman rank correlation: 0.913197
+```
+
+Interpretation:
+
+```text
+The underprediction penalty successfully reduces high-delta-T underprediction. Top-region bias improves strongly from negative bias to near-neutral/slightly positive bias, and top-region MAE improves versus prior runs. However, overall MAE, RMSE, and R2 degrade substantially. The penalty coefficient 0.5 is too strong as a default setting.
+```
+
+Interrupted v4 bs192 note:
+
+```text
+A batch-size 192 run was manually interrupted during epoch 1 and should not be treated as a completed experiment. The evaluation above corresponds to the completed bs128 checkpoint.
 ```
 
 Decision rule:
