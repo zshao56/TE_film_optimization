@@ -133,6 +133,18 @@ python src/optimization/evaluate.py --split test --seed 42
 
 评估结果会输出到 `results/evaluation/`，包括整体 MAE/RMSE/R²、按结构类型拆分的误差表、预测值与 FDM 真值散点图、高 `delta_T_parallel` 区域的单独误差指标，以及 top 区域排序命中率。只有当测试集，尤其是高温差区域，误差足够小且散点图接近对角线时，才进入代理模型辅助逆向设计。
 
+如果要让训练机自动扫描多组欠预测惩罚参数、自动评估并生成排行榜：
+```bash
+python src/optimization/run_experiments.py --penalties 0.05 0.1 0.15 0.2 0.25 --batch-size 128
+```
+
+如果已经手动跑完一轮训练，并且当前 checkpoint 位于 `results/models/best_thermonet.pth`，可先导入这轮结果到自动排行榜：
+```bash
+python src/optimization/run_experiments.py --import-current-run thermonet_v6_underpredict_0p1_bs128 --no-sweep
+```
+
+自动实验输出位于 `results/experiments/`，其中 `leaderboard.csv` 会按综合评分排序；每个 run 都会保留独立的 checkpoint、评估指标、预测 CSV 和图像，避免后续训练覆盖 `best_thermonet.pth`。
+
 ## 📐 网格无关性与网格选择 (Grid Independence)
 
 针对海量数据库生成（例如 50,000 个样本），选择极具性价比的网格分辨率至关重要。我们在对网格精度高度敏感的 `curved_wedge`（曲线楔形）结构上进行了**网格无关性测试**，以评估物理精度与计算时间成本：

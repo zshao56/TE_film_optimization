@@ -133,6 +133,18 @@ python src/optimization/evaluate.py --split test --seed 42
 
 The report is written to `results/evaluation/` and includes overall MAE/RMSE/R², per-geometry-family errors, prediction-vs-FDM scatter plots, a separate error check for the high `delta_T_parallel` region, and top-region ranking hit rates. Move to surrogate-assisted inverse design only if the test split, especially the high-temperature-difference region, is accurate enough.
 
+To let the training machine automatically sweep high-`delta_T_parallel` underprediction penalties, evaluate each run, and maintain a leaderboard:
+```bash
+python src/optimization/run_experiments.py --penalties 0.05 0.1 0.15 0.2 0.25 --batch-size 128
+```
+
+If a manual training run has already finished and the current checkpoint is still at `results/models/best_thermonet.pth`, import that run into the experiment leaderboard first:
+```bash
+python src/optimization/run_experiments.py --import-current-run thermonet_v6_underpredict_0p1_bs128 --no-sweep
+```
+
+Automated experiment outputs are written under `results/experiments/`. The script preserves each run's checkpoint, evaluation metrics, prediction CSVs, figures, and a ranked `leaderboard.csv`, so later training runs do not overwrite the model being compared.
+
 ## 📐 Grid Independence and Mesh Selection
 
 For the massive database generation (e.g., 50,000 samples), selecting the right mesh resolution is crucial. A **Grid Independence Test** was performed on the highly sensitive `curved_wedge` structure to evaluate accuracy versus computational cost:

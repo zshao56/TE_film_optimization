@@ -409,3 +409,35 @@ results/evaluation/residual_histogram_test.png
 ```
 
 If multiple runs are compared, copy or rename `best_thermonet.pth` after each run so it is not overwritten.
+
+## Automated Experiment Sweep
+
+The repository now includes:
+
+```text
+src/optimization/run_experiments.py
+```
+
+Purpose:
+
+```text
+Run multiple training/evaluation configurations on the training machine, preserve each checkpoint, and maintain a ranked leaderboard under results/experiments/.
+```
+
+Import a manually completed current checkpoint:
+
+```powershell
+python src/optimization/run_experiments.py --import-current-run thermonet_v6_underpredict_0p1_bs128 --no-sweep
+```
+
+Run an automatic underprediction-penalty sweep:
+
+```powershell
+python src/optimization/run_experiments.py --penalties 0.05 0.1 0.15 0.2 0.25 --batch-size 128
+```
+
+Primary output:
+
+```text
+results/experiments/leaderboard.csv
+```
