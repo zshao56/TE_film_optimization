@@ -72,6 +72,39 @@ def weighted_mse_loss(outputs, targets, weights=None):
     return (loss * weights).sum() / weights.sum().clamp_min(1e-12)
 
 
+def resolve_target_cutoff(dataset, quantile):
+    if not 0.0 < quantile < 1.0:
+        raise ValueError("underpredict_quantile must be between 0 and 1.")
+    raw_cutoff = float(dataset.data_frame[dataset.target_col].quantile(quantile))
+    if dataset.normalize_target:
+        loss_cutoff = (raw_cutoff - dataset.target_mean) / dataset.target_std
+    else:
+        loss_cutoff = raw_cutoff
+    return raw_cutoff, float(loss_cutoff)
+
+
+def regression_loss(
+    outputs,
+    targets,
+    weights=None,
+    underpredict_penalty=0.0,
+    underpredict_cutoff=None,
+):
+    base_loss = weighted_mse_loss(outputs, targets, weights)
+    under_loss = outputs.new_tensor(0.0)
+
+    if underpredict_penalty > 0.0:
+        if underpredict_cutoff is None:
+            raise ValueError("underpredict_cutoff is required when underpredict_penalty > 0.")
+        top_mask = targets >= underpredict_cutoff
+        if top_mask.any().item():
+            under_error = torch.relu(targets - outputs)
+            under_loss = (under_error[top_mask] ** 2).mean()
+
+    total_loss = base_loss + underpredict_penalty * under_loss
+    return total_loss, base_loss, under_loss
+
+
 def train_model(args):
     try:
         from torch.utils.tensorboard import SummaryWriter
@@ -82,6 +115,8 @@ def train_model(args):
         ) from exc
 
     set_seed(args.seed)
+    if args.underpredict_penalty < 0.0:
+        raise ValueError("underpredict_penalty must be >= 0.")
 
     # Setup Device
     device = torch.device('cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu'))
@@ -128,6 +163,23 @@ def train_model(args):
             f"Top-region weighted loss enabled: delta_T >= {dataset.top_weight_cutoff:.6g} K "
             f"gets weight {args.top_weight:.3g}"
         )
+    underpredict_raw_cutoff = None
+    underpredict_loss_cutoff = None
+    underpredict_quantile = None
+    if args.underpredict_penalty > 0.0:
+        underpredict_quantile = (
+            args.underpredict_quantile
+            if args.underpredict_quantile is not None
+            else args.top_quantile
+        )
+        underpredict_raw_cutoff, underpredict_loss_cutoff = resolve_target_cutoff(
+            dataset,
+            underpredict_quantile,
+        )
+        print(
+            f"High-delta-T underprediction penalty enabled: true delta_T >= "
+            f"{underpredict_raw_cutoff:.6g} K gets penalty {args.underpredict_penalty:.3g}"
+        )
 
     report_dir = os.path.join(project_root, args.metadata_report_dir)
     export_metadata_reports(
@@ -173,6 +225,8 @@ def train_model(args):
         # --- Training ---
         model.train()
         train_loss = 0.0
+        train_base_loss = 0.0
+        train_under_loss = 0.0
         for batch_idx, batch in enumerate(train_loader):
             masks, scalars, targets, weights = unpack_batch(batch)
             masks, scalars, targets = masks.to(device), scalars.to(device), targets.to(device)
@@ -181,42 +235,69 @@ def train_model(args):
             
             optimizer.zero_grad()
             outputs = model(masks, scalars)
-            loss = weighted_mse_loss(outputs, targets, weights)
+            loss, base_loss, under_loss = regression_loss(
+                outputs,
+                targets,
+                weights=weights,
+                underpredict_penalty=args.underpredict_penalty,
+                underpredict_cutoff=underpredict_loss_cutoff,
+            )
             loss.backward()
             if args.grad_clip > 0:
                 nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
             optimizer.step()
             
             train_loss += loss.item() * masks.size(0)
+            train_base_loss += base_loss.item() * masks.size(0)
+            train_under_loss += under_loss.item() * masks.size(0)
             
             # Log batch loss to TensorBoard
             global_step = epoch * len(train_loader) + batch_idx
             writer.add_scalar('Loss/Train_Batch', loss.item(), global_step)
+            writer.add_scalar('Loss/Train_Base_MSE_Batch', base_loss.item(), global_step)
+            if args.underpredict_penalty > 0.0:
+                writer.add_scalar('Loss/Train_Underpredict_Batch', under_loss.item(), global_step)
             
             if batch_idx % 10 == 0:
                 print(f"Epoch {epoch+1}/{args.epochs} [{batch_idx*len(masks)}/{len(train_dataset)}] Loss: {loss.item():.4f}")
 
         train_loss /= len(train_dataset)
+        train_base_loss /= len(train_dataset)
+        train_under_loss /= len(train_dataset)
         
         # --- Validation ---
         model.eval()
         val_loss = 0.0
+        val_base_loss = 0.0
+        val_under_loss = 0.0
         with torch.no_grad():
             for batch_idx, batch in enumerate(val_loader):
                 masks, scalars, targets, _weights = unpack_batch(batch)
                 masks, scalars, targets = masks.to(device), scalars.to(device), targets.to(device)
                 outputs = model(masks, scalars)
-                loss = weighted_mse_loss(outputs, targets)
+                loss, base_loss, under_loss = regression_loss(
+                    outputs,
+                    targets,
+                    underpredict_penalty=args.underpredict_penalty,
+                    underpredict_cutoff=underpredict_loss_cutoff,
+                )
                 val_loss += loss.item() * masks.size(0)
+                val_base_loss += base_loss.item() * masks.size(0)
+                val_under_loss += under_loss.item() * masks.size(0)
                 
                 # Log validation batch loss to TensorBoard
                 val_global_step = epoch * len(val_loader) + batch_idx
                 writer.add_scalar('Loss/Val_Batch', loss.item(), val_global_step)
+                writer.add_scalar('Loss/Val_Base_MSE_Batch', base_loss.item(), val_global_step)
+                if args.underpredict_penalty > 0.0:
+                    writer.add_scalar('Loss/Val_Underpredict_Batch', under_loss.item(), val_global_step)
                 
                 if batch_idx % 10 == 0:
                     print(f"Epoch {epoch+1}/{args.epochs} [Val][{batch_idx*len(masks)}/{len(val_dataset)}] Loss: {loss.item():.4f}")
                 
         val_loss /= len(val_dataset)
+        val_base_loss /= len(val_dataset)
+        val_under_loss /= len(val_dataset)
         previous_lr = optimizer.param_groups[0]['lr']
         scheduler.step(val_loss)
         current_lr = optimizer.param_groups[0]['lr']
@@ -224,6 +305,11 @@ def train_model(args):
         # Log epoch summaries to TensorBoard
         writer.add_scalar('Loss/Train_Epoch_Avg', train_loss, epoch)
         writer.add_scalar('Loss/Val_Epoch_Avg', val_loss, epoch)
+        writer.add_scalar('Loss/Train_Base_MSE_Epoch_Avg', train_base_loss, epoch)
+        writer.add_scalar('Loss/Val_Base_MSE_Epoch_Avg', val_base_loss, epoch)
+        if args.underpredict_penalty > 0.0:
+            writer.add_scalar('Loss/Train_Underpredict_Epoch_Avg', train_under_loss, epoch)
+            writer.add_scalar('Loss/Val_Underpredict_Epoch_Avg', val_under_loss, epoch)
         writer.add_scalar('Learning_Rate', current_lr, epoch)
         
         lr_note = f" | LR: {current_lr:.6f}"
@@ -248,6 +334,9 @@ def train_model(args):
                     'top_quantile': args.top_quantile,
                     'top_weight': args.top_weight,
                     'top_weight_cutoff': dataset.top_weight_cutoff,
+                    'underpredict_penalty': args.underpredict_penalty,
+                    'underpredict_quantile': underpredict_quantile,
+                    'underpredict_cutoff': underpredict_raw_cutoff,
                 },
                 save_path,
             )
@@ -281,6 +370,8 @@ if __name__ == '__main__':
     parser.add_argument('--normalize-target', action='store_true', help='Train on Z-score normalized delta_T targets')
     parser.add_argument('--top-quantile', type=float, default=0.9, help='High delta_T quantile used for optional weighted loss')
     parser.add_argument('--top-weight', type=float, default=1.0, help='Loss weight for samples above --top-quantile; 1 disables weighting')
+    parser.add_argument('--underpredict-penalty', type=float, default=0.0, help='Extra loss coefficient for underpredicting high-delta-T samples; 0 disables it')
+    parser.add_argument('--underpredict-quantile', type=float, default=None, help='Quantile cutoff for underprediction penalty; defaults to --top-quantile')
     
     args = parser.parse_args()
     train_model(args)

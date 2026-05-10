@@ -237,6 +237,38 @@ This run is better than the second run and slightly improves top-region MAE, bia
 Do not continue blindly extending v2/v3 training. The next useful step is to change the training objective or sampling strategy, then compare against the first run as the baseline.
 ```
 
+## Fourth Training Run Plan
+
+Goal:
+
+```text
+Penalize systematic underprediction in the high-delta-T region directly, instead of only increasing sample weights.
+```
+
+Code change:
+
+```text
+train.py now supports an optional high-delta-T underprediction penalty. The extra term is only applied to samples above the selected delta_T quantile and only when prediction is below the true value.
+```
+
+Recommended first command:
+
+```powershell
+python src/optimization/train.py --batch-size 32 --epochs 80 --seed 42 --normalize-target --top-quantile 0.9 --underpredict-penalty 0.5 --run-name thermonet_v4_underpredict_0p5
+```
+
+Evaluation command after training:
+
+```powershell
+python src/optimization/evaluate.py --split test --seed 42 --batch-size 64 --workers 4
+```
+
+Decision rule:
+
+```text
+If top-region bias improves without damaging overall R2 more than v3, keep tuning the penalty. If it does not improve materially, the next step should be data-level balancing or model-capacity changes rather than more loss-weight sweeps.
+```
+
 Pass criteria before moving to surrogate-assisted inverse design:
 
 ```text
