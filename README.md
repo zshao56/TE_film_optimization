@@ -116,6 +116,18 @@ python src/generate_database.py --samples 50000 --cores 8 --mode mixed --structu
 
 Use `--mode structured` to exclude random-smoothed topologies, or `--mode random` to reproduce the old noise-filtering workflow.
 
+Train the surrogate model:
+```bash
+python src/optimization/train.py --batch-size 32 --epochs 50 --seed 42
+```
+
+After training, evaluate the model on the held-out test split before adding more epochs:
+```bash
+python src/optimization/evaluate.py --split test --seed 42
+```
+
+The report is written to `results/evaluation/` and includes overall MAE/RMSE/R², per-geometry-family errors, prediction-vs-FDM scatter plots, a separate error check for the high `delta_T_parallel` region, and top-region ranking hit rates. Move to surrogate-assisted inverse design only if the test split, especially the high-temperature-difference region, is accurate enough.
+
 ## 📐 Grid Independence and Mesh Selection
 
 For the massive database generation (e.g., 50,000 samples), selecting the right mesh resolution is crucial. A **Grid Independence Test** was performed on the highly sensitive `curved_wedge` structure to evaluate accuracy versus computational cost:

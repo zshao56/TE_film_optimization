@@ -116,6 +116,18 @@ python src/generate_database.py --samples 50000 --cores 8 --mode mixed --structu
 
 你可以使用 `--mode structured` 彻底排除随机平滑拓扑，或者使用 `--mode random` 回退到纯随机生成模式。
 
+训练代理模型：
+```bash
+python src/optimization/train.py --batch-size 32 --epochs 50 --seed 42
+```
+
+训练完成后，先在独立测试集上评估代理模型，而不是直接继续加 epoch：
+```bash
+python src/optimization/evaluate.py --split test --seed 42
+```
+
+评估结果会输出到 `results/evaluation/`，包括整体 MAE/RMSE/R²、按结构类型拆分的误差表、预测值与 FDM 真值散点图、高 `delta_T_parallel` 区域的单独误差指标，以及 top 区域排序命中率。只有当测试集，尤其是高温差区域，误差足够小且散点图接近对角线时，才进入代理模型辅助逆向设计。
+
 ## 📐 网格无关性与网格选择 (Grid Independence)
 
 针对海量数据库生成（例如 50,000 个样本），选择极具性价比的网格分辨率至关重要。我们在对网格精度高度敏感的 `curved_wedge`（曲线楔形）结构上进行了**网格无关性测试**，以评估物理精度与计算时间成本：
