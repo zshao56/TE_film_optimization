@@ -150,6 +150,18 @@ python src/optimization/run_experiments.py --import-current-run thermonet_v6_und
 
 自动实验输出位于 `results/experiments/`，其中 `leaderboard.csv` 会按综合评分排序，`advisor_decisions.json` 会记录每一步的决策理由；每个 run 都会保留独立的 checkpoint、评估指标、预测 CSV 和图像，避免后续训练覆盖 `best_thermonet.pth`。
 
+进入第一版代理模型辅助逆向设计时，先用当前最佳 surrogate 批量筛候选，再用真实 FDM 复算验证：
+```bash
+python src/optimization/inverse_design.py screen --model-path results/experiments/thermonet_auto_adaptive_under_0p2_bs128/best_thermonet.pth --num-candidates 100000 --top-k 500 --batch-size 256 --mode mixed --structured-ratio 0.9 --seed 20260511
+```
+
+筛选结果会保存在 `results/inverse_design/screen_<timestamp>/`。然后选择该目录，复算前 50 个候选：
+```bash
+python src/optimization/inverse_design.py verify --screen-dir results/inverse_design/screen_<timestamp> --verify-count 50
+```
+
+`screen` 阶段只做神经网络预测；`verify` 阶段才会运行 FDM，并把真实仿真结果写入数据库和 `verified_candidates.csv`。
+
 ## 📐 网格无关性与网格选择 (Grid Independence)
 
 针对海量数据库生成（例如 50,000 个样本），选择极具性价比的网格分辨率至关重要。我们在对网格精度高度敏感的 `curved_wedge`（曲线楔形）结构上进行了**网格无关性测试**，以评估物理精度与计算时间成本：

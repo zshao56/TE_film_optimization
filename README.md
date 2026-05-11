@@ -150,6 +150,18 @@ python src/optimization/run_experiments.py --import-current-run thermonet_v6_und
 
 Automated experiment outputs are written under `results/experiments/`. The script preserves each run's checkpoint, evaluation metrics, prediction CSVs, figures, a ranked `leaderboard.csv`, and advisor reasoning in `advisor_decisions.json`, so later training runs do not overwrite the model being compared.
 
+For the first surrogate-assisted inverse-design pass, screen a large candidate pool with the selected surrogate, then verify the top candidates with the real FDM solver:
+```bash
+python src/optimization/inverse_design.py screen --model-path results/experiments/thermonet_auto_adaptive_under_0p2_bs128/best_thermonet.pth --num-candidates 100000 --top-k 500 --batch-size 256 --mode mixed --structured-ratio 0.9 --seed 20260511
+```
+
+Screening outputs are written to `results/inverse_design/screen_<timestamp>/`. Then verify the first 50 candidates from that directory:
+```bash
+python src/optimization/inverse_design.py verify --screen-dir results/inverse_design/screen_<timestamp> --verify-count 50
+```
+
+The `screen` command only runs neural-network inference. The `verify` command runs FDM, appends verified simulations to the database, and writes `verified_candidates.csv`.
+
 ## 📐 Grid Independence and Mesh Selection
 
 For the massive database generation (e.g., 50,000 samples), selecting the right mesh resolution is crucial. A **Grid Independence Test** was performed on the highly sensitive `curved_wedge` structure to evaluate accuracy versus computational cost:

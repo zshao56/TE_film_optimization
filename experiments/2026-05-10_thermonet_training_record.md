@@ -448,3 +448,35 @@ Primary output:
 results/experiments/leaderboard.csv
 results/experiments/advisor_decisions.json
 ```
+
+## First Inverse-Design Pass
+
+Selected surrogate checkpoint:
+
+```text
+results/experiments/thermonet_auto_adaptive_under_0p2_bs128/best_thermonet.pth
+```
+
+Rationale:
+
+```text
+Penalty 0.2 provides the best balance for the next stage: overall R2 remains near the useful range, top-region bias is within the current threshold, and top-region MAE is better than lighter-penalty runs. Higher penalties improve top MAE but damage overall R2 too much.
+```
+
+Candidate screening command:
+
+```powershell
+python src/optimization/inverse_design.py screen --model-path results/experiments/thermonet_auto_adaptive_under_0p2_bs128/best_thermonet.pth --num-candidates 100000 --top-k 500 --batch-size 256 --mode mixed --structured-ratio 0.9 --seed 20260511
+```
+
+FDM verification command:
+
+```powershell
+python src/optimization/inverse_design.py verify --screen-dir results/inverse_design/screen_<timestamp> --verify-count 50
+```
+
+Decision rule:
+
+```text
+Use surrogate predictions only to rank and shortlist candidates. Do not treat surrogate predictions as final optimized results. Final claims must come from FDM-verified candidates.
+```

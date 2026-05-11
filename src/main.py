@@ -93,6 +93,7 @@ def run_simulation_pipeline(geom_params, sim_id):
         
     append_metadata(metadata_record)
     print(f"Finished {sim_id}. Delta T_parallel: {metadata_record.get('delta_T_parallel')}\n")
+    return metadata_record
 
 if __name__ == "__main__":
     Lx, Ly, h = 0.01, 0.01, 0.002 # 1cm x 1cm x 2mm
