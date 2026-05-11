@@ -469,6 +469,12 @@ Candidate screening command:
 python src/optimization/inverse_design.py screen --model-path results/experiments/thermonet_auto_adaptive_under_0p2_bs128/best_thermonet.pth --num-candidates 100000 --top-k 500 --batch-size 256 --mode mixed --structured-ratio 0.9 --seed 20260511
 ```
 
+Fixed-condition shape-only screening command:
+
+```powershell
+python src/optimization/inverse_design.py screen --model-path results/experiments/thermonet_auto_adaptive_under_0p2_bs128/best_thermonet.pth --num-candidates 100000 --top-k 500 --batch-size 256 --mode mixed --structured-ratio 0.9 --seed 20260511 --fixed-h 0.001 --fixed-k-low 0.2 --fixed-k-high 3.0 --fixed-T-hot 350.0 --fixed-T-air 298.15 --fixed-h-c 10.0 --fixed-h-c-side 10.0
+```
+
 FDM verification command:
 
 ```powershell
@@ -479,4 +485,5 @@ Decision rule:
 
 ```text
 Use surrogate predictions only to rank and shortlist candidates. Do not treat surrogate predictions as final optimized results. Final claims must come from FDM-verified candidates.
+For fixed-condition inverse design, T_hot, T_air, thickness, and material conductivities must be fixed during screening and verification. Otherwise the surrogate will mostly select easier operating conditions rather than better geometries.
 ```

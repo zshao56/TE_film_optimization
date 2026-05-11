@@ -90,10 +90,18 @@ def _sample_candidate(args, seed, candidate_index):
     Lx, Ly = args.Lx, args.Ly
     nx, ny, nz = args.nx, args.ny, args.nz
 
-    h = float(rng.uniform(args.h_min, args.h_max))
-    k_low = float(rng.uniform(args.k_low_min, args.k_low_max))
-    k_high = float(rng.uniform(args.k_high_min, args.k_high_max))
+    h = args.fixed_h if args.fixed_h is not None else float(rng.uniform(args.h_min, args.h_max))
+    k_low = args.fixed_k_low if args.fixed_k_low is not None else float(rng.uniform(args.k_low_min, args.k_low_max))
+    k_high = args.fixed_k_high if args.fixed_k_high is not None else float(rng.uniform(args.k_high_min, args.k_high_max))
     env_params = _sample_environment(rng)
+    if args.fixed_T_hot is not None:
+        env_params["T_hot"] = float(args.fixed_T_hot)
+    if args.fixed_T_air is not None:
+        env_params["T_air"] = float(args.fixed_T_air)
+    if args.fixed_h_c is not None:
+        env_params["h_c"] = float(args.fixed_h_c)
+    if args.fixed_h_c_side is not None:
+        env_params["h_c_side"] = float(args.fixed_h_c_side)
     geom = _sample_geometry(
         Lx,
         Ly,
@@ -171,6 +179,15 @@ def _save_screen_outputs(args, output_dir, all_records, top_items, checkpoint_me
         "top_k": args.top_k,
         "mode": args.mode,
         "structured_ratio": args.structured_ratio,
+        "fixed_values": {
+            "h": args.fixed_h,
+            "k_low": args.fixed_k_low,
+            "k_high": args.fixed_k_high,
+            "T_hot": args.fixed_T_hot,
+            "T_air": args.fixed_T_air,
+            "h_c": args.fixed_h_c,
+            "h_c_side": args.fixed_h_c_side,
+        },
         "seed": args.seed,
         "checkpoint_meta": {
             key: value
@@ -324,6 +341,13 @@ def build_parser():
     screen.add_argument("--k-low-max", type=float, default=0.5)
     screen.add_argument("--k-high-min", type=float, default=1.0)
     screen.add_argument("--k-high-max", type=float, default=5.0)
+    screen.add_argument("--fixed-h", type=float, default=None, help="Fix film thickness during candidate screening.")
+    screen.add_argument("--fixed-k-low", type=float, default=None, help="Fix low-conductivity material value.")
+    screen.add_argument("--fixed-k-high", type=float, default=None, help="Fix high-conductivity material value.")
+    screen.add_argument("--fixed-T-hot", type=float, default=None, help="Fix hot-side temperature.")
+    screen.add_argument("--fixed-T-air", type=float, default=None, help="Fix ambient/cold-side air temperature.")
+    screen.add_argument("--fixed-h-c", type=float, default=None, help="Fix top convection coefficient.")
+    screen.add_argument("--fixed-h-c-side", type=float, default=None, help="Fix side convection coefficient.")
     screen.set_defaults(func=screen_candidates)
 
     verify = subparsers.add_parser("verify", help="Run FDM verification for screened top candidates.")

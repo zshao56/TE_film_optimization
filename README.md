@@ -155,6 +155,11 @@ For the first surrogate-assisted inverse-design pass, screen a large candidate p
 python src/optimization/inverse_design.py screen --model-path results/experiments/thermonet_auto_adaptive_under_0p2_bs128/best_thermonet.pth --num-candidates 100000 --top-k 500 --batch-size 256 --mode mixed --structured-ratio 0.9 --seed 20260511
 ```
 
+For fixed-condition shape optimization, explicitly fix the operating condition, film thickness, and material values so only geometry varies:
+```bash
+python src/optimization/inverse_design.py screen --model-path results/experiments/thermonet_auto_adaptive_under_0p2_bs128/best_thermonet.pth --num-candidates 100000 --top-k 500 --batch-size 256 --mode mixed --structured-ratio 0.9 --seed 20260511 --fixed-h 0.001 --fixed-k-low 0.2 --fixed-k-high 3.0 --fixed-T-hot 350.0 --fixed-T-air 298.15 --fixed-h-c 10.0 --fixed-h-c-side 10.0
+```
+
 Screening outputs are written to `results/inverse_design/screen_<timestamp>/`. Then verify the first 50 candidates from that directory:
 ```bash
 python src/optimization/inverse_design.py verify --screen-dir results/inverse_design/screen_<timestamp> --verify-count 50
