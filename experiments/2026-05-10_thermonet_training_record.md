@@ -487,7 +487,7 @@ Continue verification to surrogate top 200 without recomputing existing rows:
 python src/optimization/inverse_design.py verify --screen-dir results/inverse_design/screen_<timestamp> --verify-count 200
 ```
 
-Plot the top 10 FDM-verified structures into the same folder as `verified_candidates.csv`:
+Plot the top 10 FDM-verified structures as one combined figure into the same folder as `verified_candidates.csv`:
 
 ```powershell
 python src/optimization/inverse_design.py plot-top --screen-dir results/inverse_design/screen_<timestamp> --top-n 10

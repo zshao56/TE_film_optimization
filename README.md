@@ -170,7 +170,7 @@ The `verify` command skips candidates that are already present in `verified_cand
 python src/optimization/inverse_design.py verify --screen-dir results/inverse_design/screen_<timestamp> --verify-count 200
 ```
 
-To export figures for the top 10 structures ranked by real FDM `fdm_delta_T`, save the PNG files into the same folder as `verified_candidates.csv`:
+To export one combined figure for the top 10 structures ranked by real FDM `fdm_delta_T`, save the PNG into the same folder as `verified_candidates.csv`:
 ```bash
 python src/optimization/inverse_design.py plot-top --screen-dir results/inverse_design/screen_<timestamp> --top-n 10
 ```

@@ -170,7 +170,7 @@ python src/optimization/inverse_design.py verify --screen-dir results/inverse_de
 python src/optimization/inverse_design.py verify --screen-dir results/inverse_design/screen_<timestamp> --verify-count 200
 ```
 
-如果要把真实 FDM 排名前 10 的结构图输出到 `verified_candidates.csv` 所在文件夹：
+如果要把真实 FDM 排名前 10 的结构合并成一张图，并输出到 `verified_candidates.csv` 所在文件夹：
 ```bash
 python src/optimization/inverse_design.py plot-top --screen-dir results/inverse_design/screen_<timestamp> --top-n 10
 ```

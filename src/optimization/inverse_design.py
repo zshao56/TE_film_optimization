@@ -425,31 +425,36 @@ def plot_top_verified(args):
     os.makedirs(output_dir, exist_ok=True)
 
     saved_paths = []
-    for top_idx, (_, row) in enumerate(top_df.iterrows(), start=1):
-        candidate_id = str(row["candidate_id"])
-        if candidate_id not in mask_map:
-            raise KeyError(f"Missing mask for candidate {candidate_id}")
+    if args.save_individual:
+        for top_idx, (_, row) in enumerate(top_df.iterrows(), start=1):
+            candidate_id = str(row["candidate_id"])
+            if candidate_id not in mask_map:
+                raise KeyError(f"Missing mask for candidate {candidate_id}")
 
-        fig = plt.figure(figsize=(7.2, 5.6), dpi=180)
-        ax = fig.add_subplot(111, projection="3d")
-        _plot_mask_on_axis(ax, mask_map[candidate_id], row, f"Top {top_idx}", args.elev, args.azim)
-        fig.tight_layout()
+            fig = plt.figure(figsize=(7.2, 5.6), dpi=180)
+            ax = fig.add_subplot(111, projection="3d")
+            _plot_mask_on_axis(ax, mask_map[candidate_id], row, f"Top {top_idx}", args.elev, args.azim)
+            fig.tight_layout()
 
-        filename = (
-            f"top{top_idx:02d}_fdm_{float(row['fdm_delta_T']):.3f}_"
-            f"rank{int(row['surrogate_rank']):03d}_{_safe_filename(candidate_id)}.png"
-        )
-        save_path = os.path.join(output_dir, filename)
-        fig.savefig(save_path, bbox_inches="tight")
-        plt.close(fig)
-        saved_paths.append(save_path)
+            filename = (
+                f"top{top_idx:02d}_fdm_{float(row['fdm_delta_T']):.3f}_"
+                f"rank{int(row['surrogate_rank']):03d}_{_safe_filename(candidate_id)}.png"
+            )
+            save_path = os.path.join(output_dir, filename)
+            fig.savefig(save_path, bbox_inches="tight")
+            plt.close(fig)
+            saved_paths.append(save_path)
 
     ncols = min(5, len(top_df))
     nrows = math.ceil(len(top_df) / ncols)
     fig = plt.figure(figsize=(4.2 * ncols, 3.8 * nrows), dpi=180)
     for top_idx, (_, row) in enumerate(top_df.iterrows(), start=1):
+        candidate_id = str(row["candidate_id"])
+        if candidate_id not in mask_map:
+            raise KeyError(f"Missing mask for candidate {candidate_id}")
+
         ax = fig.add_subplot(nrows, ncols, top_idx, projection="3d")
-        _plot_mask_on_axis(ax, mask_map[str(row["candidate_id"])], row, f"Top {top_idx}", args.elev, args.azim)
+        _plot_mask_on_axis(ax, mask_map[candidate_id], row, f"Top {top_idx}", args.elev, args.azim)
     fig.tight_layout()
 
     overview_path = os.path.join(output_dir, f"top{len(top_df):02d}_verified_structures.png")
@@ -512,6 +517,7 @@ def build_parser():
     plot_top.add_argument("--output-dir", type=str, default=None, help="Defaults to the folder containing verified_candidates.csv.")
     plot_top.add_argument("--elev", type=float, default=30.0)
     plot_top.add_argument("--azim", type=float, default=45.0)
+    plot_top.add_argument("--save-individual", action="store_true", help="Also save one PNG per top candidate.")
     plot_top.set_defaults(func=plot_top_verified)
 
     return parser
