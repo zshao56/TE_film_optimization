@@ -155,9 +155,9 @@ For the first surrogate-assisted inverse-design pass, screen a large candidate p
 python src/optimization/inverse_design.py screen --model-path results/experiments/thermonet_auto_adaptive_under_0p2_bs128/best_thermonet.pth --num-candidates 100000 --top-k 500 --batch-size 256 --mode mixed --structured-ratio 0.9 --seed 20260511
 ```
 
-For fixed-condition shape optimization, explicitly fix the operating condition, film thickness, and material values so only geometry varies:
+For fixed-condition inverse design, explicitly fix the operating condition and film thickness. Leave material values variable when the goal is to find the best material/geometry combination under the same thermal boundary condition:
 ```bash
-python src/optimization/inverse_design.py screen --model-path results/experiments/thermonet_auto_adaptive_under_0p2_bs128/best_thermonet.pth --num-candidates 100000 --top-k 500 --batch-size 256 --mode mixed --structured-ratio 0.9 --seed 20260511 --fixed-h 0.001 --fixed-k-low 0.2 --fixed-k-high 3.0 --fixed-T-hot 350.0 --fixed-T-air 298.15 --fixed-h-c 10.0 --fixed-h-c-side 10.0
+python src/optimization/inverse_design.py screen --model-path results/experiments/thermonet_auto_adaptive_under_0p2_bs128/best_thermonet.pth --num-candidates 100000 --top-k 500 --batch-size 256 --mode mixed --structured-ratio 0.9 --seed 20260511 --fixed-h 0.001 --fixed-T-hot 350.0 --fixed-T-air 298.15 --fixed-h-c 10.0 --fixed-h-c-side 10.0
 ```
 
 Screening outputs are written to `results/inverse_design/screen_<timestamp>/`. Then verify the first 50 candidates from that directory:
@@ -165,7 +165,17 @@ Screening outputs are written to `results/inverse_design/screen_<timestamp>/`. T
 python src/optimization/inverse_design.py verify --screen-dir results/inverse_design/screen_<timestamp> --verify-count 50
 ```
 
-The `screen` command only runs neural-network inference. The `verify` command runs FDM, appends verified simulations to the database, and writes `verified_candidates.csv`.
+The `verify` command skips candidates that are already present in `verified_candidates.csv`, so this extends the same verification file to the top 200 without recomputing the first 50:
+```bash
+python src/optimization/inverse_design.py verify --screen-dir results/inverse_design/screen_<timestamp> --verify-count 200
+```
+
+To export figures for the top 10 structures ranked by real FDM `fdm_delta_T`, save the PNG files into the same folder as `verified_candidates.csv`:
+```bash
+python src/optimization/inverse_design.py plot-top --screen-dir results/inverse_design/screen_<timestamp> --top-n 10
+```
+
+The `screen` command only runs neural-network inference. The `verify` command runs FDM, appends verified simulations to the database, and writes `verified_candidates.csv`. The final candidate ranking should use the FDM values in `verified_candidates.csv`, not the surrogate rank.
 
 ## 📐 Grid Independence and Mesh Selection
 

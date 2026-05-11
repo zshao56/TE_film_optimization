@@ -2,7 +2,10 @@ import argparse
 import heapq
 import json
 import os
+import math
+import re
 import sys
+import tempfile
 import uuid
 from datetime import datetime
 
@@ -275,14 +278,61 @@ def _load_top_masks(screen_dir):
     return {candidate_id: masks[idx] for idx, candidate_id in enumerate(candidate_ids)}
 
 
+VERIFY_COLUMNS = [
+    "candidate_id",
+    "simulation_id",
+    "surrogate_rank",
+    "predicted_delta_T",
+    "fdm_delta_T",
+    "residual",
+    "geometry_type",
+    "geometry_parameters",
+]
+
+
+def _load_existing_verifications(out_path):
+    if not os.path.exists(out_path) or os.path.getsize(out_path) == 0:
+        return pd.DataFrame(columns=VERIFY_COLUMNS), set()
+
+    existing_df = pd.read_csv(out_path)
+    if "candidate_id" not in existing_df.columns:
+        raise ValueError(f"Existing verification CSV has no candidate_id column: {out_path}")
+
+    verified_ids = set(existing_df["candidate_id"].dropna().astype(str))
+    return existing_df, verified_ids
+
+
 def verify_candidates(args):
     top_path = os.path.join(args.screen_dir, "top_candidates.csv")
     if not os.path.exists(top_path):
         raise FileNotFoundError(f"Top candidate CSV not found: {top_path}")
+    if args.start_rank < 1:
+        raise ValueError("--start-rank must be >= 1")
+    if args.verify_count < 1:
+        raise ValueError("--verify-count must be >= 1")
 
     top_df = pd.read_csv(top_path)
     mask_map = _load_top_masks(args.screen_dir)
-    verify_df = top_df.head(args.verify_count).copy()
+    out_path = args.output_csv or os.path.join(args.screen_dir, "verified_candidates.csv")
+    existing_df, verified_ids = _load_existing_verifications(out_path)
+
+    rank_end = args.start_rank + args.verify_count - 1
+    verify_df = top_df[
+        (top_df["surrogate_rank"] >= args.start_rank) & (top_df["surrogate_rank"] <= rank_end)
+    ].copy()
+    if verify_df.empty:
+        print(f"No candidates found for surrogate ranks {args.start_rank}-{rank_end}")
+        return
+
+    before_skip = len(verify_df)
+    verify_df = verify_df[~verify_df["candidate_id"].astype(str).isin(verified_ids)].copy()
+    skipped_count = before_skip - len(verify_df)
+    if skipped_count:
+        print(f"Skipping {skipped_count} already verified candidates in ranks {args.start_rank}-{rank_end}")
+    if verify_df.empty:
+        print(f"No new candidates to verify. Existing results are in {out_path}")
+        return
+
     rows = []
 
     for _, row in verify_df.iterrows():
@@ -309,9 +359,107 @@ def verify_candidates(args):
             }
         )
 
-    out_path = args.output_csv or os.path.join(args.screen_dir, "verified_candidates.csv")
-    pd.DataFrame(rows).to_csv(out_path, index=False)
+    new_df = pd.DataFrame(rows, columns=VERIFY_COLUMNS)
+    combined_df = pd.concat([existing_df, new_df], ignore_index=True)
+    combined_df = combined_df.drop_duplicates(subset=["candidate_id"], keep="first")
+    if "surrogate_rank" in combined_df.columns:
+        combined_df = combined_df.sort_values("surrogate_rank", kind="stable")
+    combined_df.to_csv(out_path, index=False)
     print(f"\nSaved verified candidate results to {out_path}")
+    print(f"Verified {len(new_df)} new candidates; total rows in CSV: {len(combined_df)}")
+
+
+def _safe_filename(value):
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", str(value)).strip("_")
+
+
+def _plot_mask_on_axis(ax, mask, row, title_prefix, elev, azim):
+    colors = np.empty(mask.shape, dtype=object)
+    colors[:] = "#00000000"
+    colors[mask] = "#4ECDC4"
+
+    ax.voxels(mask, facecolors=colors, edgecolor="#1F2933", linewidth=0.08, alpha=0.92)
+    ax.set_title(
+        (
+            f"{title_prefix} | rank {int(row['surrogate_rank'])} | "
+            f"FDM {float(row['fdm_delta_T']):.3f} K\n"
+            f"{row['candidate_id']} | {row['geometry_type']}"
+        ),
+        fontsize=8,
+    )
+    ax.set_xlabel("X", labelpad=-4)
+    ax.set_ylabel("Y", labelpad=-4)
+    ax.set_zlabel("Z", labelpad=-4)
+    ax.tick_params(labelsize=6, pad=-2)
+    ax.view_init(elev=elev, azim=azim)
+    ax.set_box_aspect(mask.shape)
+
+
+def plot_top_verified(args):
+    if args.top_n < 1:
+        raise ValueError("--top-n must be >= 1")
+
+    os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "te_film_matplotlib"))
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    verified_csv = args.verified_csv or os.path.join(args.screen_dir, "verified_candidates.csv")
+    if not os.path.exists(verified_csv):
+        raise FileNotFoundError(f"Verified candidate CSV not found: {verified_csv}")
+
+    verified_df = pd.read_csv(verified_csv)
+    required_columns = {"candidate_id", "surrogate_rank", "fdm_delta_T", "geometry_type"}
+    missing_columns = required_columns - set(verified_df.columns)
+    if missing_columns:
+        raise ValueError(f"Verified CSV is missing required columns: {sorted(missing_columns)}")
+
+    verified_df["fdm_delta_T"] = pd.to_numeric(verified_df["fdm_delta_T"], errors="coerce")
+    top_df = verified_df.dropna(subset=["fdm_delta_T"]).sort_values("fdm_delta_T", ascending=False).head(args.top_n)
+    if top_df.empty:
+        raise ValueError(f"No numeric fdm_delta_T values found in {verified_csv}")
+
+    mask_map = _load_top_masks(args.screen_dir)
+    output_dir = args.output_dir or os.path.dirname(os.path.abspath(verified_csv))
+    os.makedirs(output_dir, exist_ok=True)
+
+    saved_paths = []
+    for top_idx, (_, row) in enumerate(top_df.iterrows(), start=1):
+        candidate_id = str(row["candidate_id"])
+        if candidate_id not in mask_map:
+            raise KeyError(f"Missing mask for candidate {candidate_id}")
+
+        fig = plt.figure(figsize=(7.2, 5.6), dpi=180)
+        ax = fig.add_subplot(111, projection="3d")
+        _plot_mask_on_axis(ax, mask_map[candidate_id], row, f"Top {top_idx}", args.elev, args.azim)
+        fig.tight_layout()
+
+        filename = (
+            f"top{top_idx:02d}_fdm_{float(row['fdm_delta_T']):.3f}_"
+            f"rank{int(row['surrogate_rank']):03d}_{_safe_filename(candidate_id)}.png"
+        )
+        save_path = os.path.join(output_dir, filename)
+        fig.savefig(save_path, bbox_inches="tight")
+        plt.close(fig)
+        saved_paths.append(save_path)
+
+    ncols = min(5, len(top_df))
+    nrows = math.ceil(len(top_df) / ncols)
+    fig = plt.figure(figsize=(4.2 * ncols, 3.8 * nrows), dpi=180)
+    for top_idx, (_, row) in enumerate(top_df.iterrows(), start=1):
+        ax = fig.add_subplot(nrows, ncols, top_idx, projection="3d")
+        _plot_mask_on_axis(ax, mask_map[str(row["candidate_id"])], row, f"Top {top_idx}", args.elev, args.azim)
+    fig.tight_layout()
+
+    overview_path = os.path.join(output_dir, f"top{len(top_df):02d}_verified_structures.png")
+    fig.savefig(overview_path, bbox_inches="tight")
+    plt.close(fig)
+    saved_paths.append(overview_path)
+
+    print("\nSaved FDM-ranked structure figures:")
+    for path in saved_paths:
+        print(f"- {path}")
 
 
 def build_parser():
@@ -353,8 +501,18 @@ def build_parser():
     verify = subparsers.add_parser("verify", help="Run FDM verification for screened top candidates.")
     verify.add_argument("--screen-dir", type=str, required=True)
     verify.add_argument("--verify-count", type=int, default=50)
+    verify.add_argument("--start-rank", type=int, default=1, help="First surrogate rank to verify, using 1-based ranks.")
     verify.add_argument("--output-csv", type=str, default=None)
     verify.set_defaults(func=verify_candidates)
+
+    plot_top = subparsers.add_parser("plot-top", help="Plot the top FDM-verified structures from a screen directory.")
+    plot_top.add_argument("--screen-dir", type=str, required=True)
+    plot_top.add_argument("--verified-csv", type=str, default=None)
+    plot_top.add_argument("--top-n", type=int, default=10)
+    plot_top.add_argument("--output-dir", type=str, default=None, help="Defaults to the folder containing verified_candidates.csv.")
+    plot_top.add_argument("--elev", type=float, default=30.0)
+    plot_top.add_argument("--azim", type=float, default=45.0)
+    plot_top.set_defaults(func=plot_top_verified)
 
     return parser
 

@@ -155,9 +155,9 @@ python src/optimization/run_experiments.py --import-current-run thermonet_v6_und
 python src/optimization/inverse_design.py screen --model-path results/experiments/thermonet_auto_adaptive_under_0p2_bs128/best_thermonet.pth --num-candidates 100000 --top-k 500 --batch-size 256 --mode mixed --structured-ratio 0.9 --seed 20260511
 ```
 
-如果目标是固定工况、固定厚度和固定材料，只优化几何结构，则显式固定这些参数：
+如果目标是固定工况和固定厚度下寻找最佳材料/几何组合，则显式固定热边界条件和厚度，但不要固定 `k_low` / `k_high`：
 ```bash
-python src/optimization/inverse_design.py screen --model-path results/experiments/thermonet_auto_adaptive_under_0p2_bs128/best_thermonet.pth --num-candidates 100000 --top-k 500 --batch-size 256 --mode mixed --structured-ratio 0.9 --seed 20260511 --fixed-h 0.001 --fixed-k-low 0.2 --fixed-k-high 3.0 --fixed-T-hot 350.0 --fixed-T-air 298.15 --fixed-h-c 10.0 --fixed-h-c-side 10.0
+python src/optimization/inverse_design.py screen --model-path results/experiments/thermonet_auto_adaptive_under_0p2_bs128/best_thermonet.pth --num-candidates 100000 --top-k 500 --batch-size 256 --mode mixed --structured-ratio 0.9 --seed 20260511 --fixed-h 0.001 --fixed-T-hot 350.0 --fixed-T-air 298.15 --fixed-h-c 10.0 --fixed-h-c-side 10.0
 ```
 
 筛选结果会保存在 `results/inverse_design/screen_<timestamp>/`。然后选择该目录，复算前 50 个候选：
@@ -165,7 +165,17 @@ python src/optimization/inverse_design.py screen --model-path results/experiment
 python src/optimization/inverse_design.py verify --screen-dir results/inverse_design/screen_<timestamp> --verify-count 50
 ```
 
-`screen` 阶段只做神经网络预测；`verify` 阶段才会运行 FDM，并把真实仿真结果写入数据库和 `verified_candidates.csv`。
+`verify` 会自动跳过已经写入 `verified_candidates.csv` 的候选，所以可以用下面的命令把同一个 CSV 继续扩展到 surrogate top 200，不会重复计算前 50 个：
+```bash
+python src/optimization/inverse_design.py verify --screen-dir results/inverse_design/screen_<timestamp> --verify-count 200
+```
+
+如果要把真实 FDM 排名前 10 的结构图输出到 `verified_candidates.csv` 所在文件夹：
+```bash
+python src/optimization/inverse_design.py plot-top --screen-dir results/inverse_design/screen_<timestamp> --top-n 10
+```
+
+`screen` 阶段只做神经网络预测；`verify` 阶段才会运行 FDM，并把真实仿真结果写入数据库和 `verified_candidates.csv`。最终排序应看 `verified_candidates.csv` 里的真实 `fdm_delta_T`，不要看 surrogate rank。
 
 ## 📐 网格无关性与网格选择 (Grid Independence)
 

@@ -469,10 +469,10 @@ Candidate screening command:
 python src/optimization/inverse_design.py screen --model-path results/experiments/thermonet_auto_adaptive_under_0p2_bs128/best_thermonet.pth --num-candidates 100000 --top-k 500 --batch-size 256 --mode mixed --structured-ratio 0.9 --seed 20260511
 ```
 
-Fixed-condition shape-only screening command:
+Fixed-condition screening command with variable materials:
 
 ```powershell
-python src/optimization/inverse_design.py screen --model-path results/experiments/thermonet_auto_adaptive_under_0p2_bs128/best_thermonet.pth --num-candidates 100000 --top-k 500 --batch-size 256 --mode mixed --structured-ratio 0.9 --seed 20260511 --fixed-h 0.001 --fixed-k-low 0.2 --fixed-k-high 3.0 --fixed-T-hot 350.0 --fixed-T-air 298.15 --fixed-h-c 10.0 --fixed-h-c-side 10.0
+python src/optimization/inverse_design.py screen --model-path results/experiments/thermonet_auto_adaptive_under_0p2_bs128/best_thermonet.pth --num-candidates 100000 --top-k 500 --batch-size 256 --mode mixed --structured-ratio 0.9 --seed 20260511 --fixed-h 0.001 --fixed-T-hot 350.0 --fixed-T-air 298.15 --fixed-h-c 10.0 --fixed-h-c-side 10.0
 ```
 
 FDM verification command:
@@ -481,9 +481,21 @@ FDM verification command:
 python src/optimization/inverse_design.py verify --screen-dir results/inverse_design/screen_<timestamp> --verify-count 50
 ```
 
+Continue verification to surrogate top 200 without recomputing existing rows:
+
+```powershell
+python src/optimization/inverse_design.py verify --screen-dir results/inverse_design/screen_<timestamp> --verify-count 200
+```
+
+Plot the top 10 FDM-verified structures into the same folder as `verified_candidates.csv`:
+
+```powershell
+python src/optimization/inverse_design.py plot-top --screen-dir results/inverse_design/screen_<timestamp> --top-n 10
+```
+
 Decision rule:
 
 ```text
 Use surrogate predictions only to rank and shortlist candidates. Do not treat surrogate predictions as final optimized results. Final claims must come from FDM-verified candidates.
-For fixed-condition inverse design, T_hot, T_air, thickness, and material conductivities must be fixed during screening and verification. Otherwise the surrogate will mostly select easier operating conditions rather than better geometries.
+For fixed-condition inverse design, T_hot, T_air, thickness, and convection coefficients must be fixed during screening and verification. Material conductivities can remain variable when the target is the best material/geometry combination under the same operating condition.
 ```
