@@ -57,8 +57,15 @@ def run_simulation_pipeline(geom_params, sim_id):
     }
     h5_path = save_h5_fields(sim_id, h5_data)
     
-    # Prepare parameters for JSON serialization (remove large numpy arrays like mask_3d)
-    json_params = {k: v for k, v in geom_params.items() if k != 'mask_3d'}
+    # Prepare parameters for JSON serialization (remove large arrays and unwrap numpy scalars).
+    json_params = {}
+    for key, value in geom_params.items():
+        if key in {'mask_3d', 'T_hot_map'}:
+            continue
+        if isinstance(value, (np.integer, np.floating, np.bool_)):
+            json_params[key] = value.item()
+        else:
+            json_params[key] = value
     
     # Save Metadata
     metadata_record = {
@@ -70,9 +77,35 @@ def run_simulation_pipeline(geom_params, sim_id):
         'length_Ly': Ly,
         'k_low': geom_params.get('k_low', geom_params.get('k_val')),
         'k_high': geom_params.get('k_high', geom_params.get('k_val')),
+        'k_ratio': geom_params.get('k_ratio'),
         'boundary_condition_id': 'BC-001-TOP-ELECTRODE',
         'T_hot': T_hot,
         'T_air': T_air,
+        'h_c': h_c,
+        'h_c_side': h_c_side,
+        'database_profile': geom_params.get('database_profile', 'legacy'),
+        'scenario_id': geom_params.get('scenario_id'),
+        'convection_regime': geom_params.get('convection_regime'),
+        'convection_regime_code': geom_params.get('convection_regime_code'),
+        'hot_boundary_type': geom_params.get('hot_boundary_type'),
+        'hot_boundary_type_code': geom_params.get('hot_boundary_type_code'),
+        'T_hot_min': geom_params.get('T_hot_min'),
+        'T_hot_max': geom_params.get('T_hot_max'),
+        'T_hot_amplitude': geom_params.get('T_hot_amplitude'),
+        'gradient_direction_code': geom_params.get('gradient_direction_code'),
+        'hotspot_x': geom_params.get('hotspot_x'),
+        'hotspot_y': geom_params.get('hotspot_y'),
+        'hotspot_sigma': geom_params.get('hotspot_sigma'),
+        'curvature_type': geom_params.get('curvature_type'),
+        'curvature_level': geom_params.get('curvature_level'),
+        'arc_angle': geom_params.get('arc_angle'),
+        'bend_axis': geom_params.get('bend_axis'),
+        'bend_axis_code': geom_params.get('bend_axis_code'),
+        'bend_radius': geom_params.get('bend_radius'),
+        'arc_length': geom_params.get('arc_length'),
+        'projected_length': geom_params.get('projected_length'),
+        'projected_Lx': geom_params.get('projected_Lx'),
+        'projected_Ly': geom_params.get('projected_Ly'),
         'measurement_wx': wx,
         'measurement_wy': wy,
         'electrode_min_gap': s_min,

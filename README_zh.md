@@ -116,9 +116,26 @@ python src/generate_database.py --samples 50000 --cores 8 --mode mixed --structu
 
 你可以使用 `--mode structured` 彻底排除随机平滑拓扑，或者使用 `--mode random` 回退到纯随机生成模式。
 
+如果要生成覆盖更多应用场景的新版数据库，使用 `expanded` profile。它会扩展薄膜厚度、热导率对比、自然/强制对流、非均匀热端温度分布，并记录从平面到半圆柱弧的曲率场景参数：
+```bash
+python src/generate_database.py --samples 100000 --cores 8 --mode mixed --structured-ratio 0.8 --seed 42 --profile expanded
+```
+
+如果是从零生成新版数据库，先清空旧的 `metadata.csv` 和 HDF5 场文件，避免旧版/新版 schema 混在一起：
+```bash
+rm -f data/simulations/metadata.csv
+rm -f data/simulations/fields/*.h5
+mkdir -p data/simulations/fields logs
+```
+
 训练代理模型：
 ```bash
 python src/optimization/train.py --batch-size 32 --epochs 50 --seed 42
+```
+
+训练新版 expanded 数据库时，建议把热端二维温度图作为第二个 CNN 输入通道：
+```bash
+python src/optimization/train.py --batch-size 128 --epochs 80 --seed 42 --workers 4 --normalize-target --top-quantile 0.9 --top-weight 3.0 --include-boundary-channel
 ```
 
 如果第一轮模型在高 `delta_T_parallel` 区域明显低估，可启动第二轮训练配置：

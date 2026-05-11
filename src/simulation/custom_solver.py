@@ -143,11 +143,18 @@ class Custom3DFDMSolver:
         
         # --- Boundary Conditions ---
         
-        # Bottom (z=0): Dirichlet T = T_hot
+        # Bottom (z=0): Dirichlet T = T_hot, optionally spatially non-uniform.
         k_bottom = kappa[:, :, 0]
         coeff_b = k_bottom / (dz**2 / 2.0)
+        hot_boundary = self.geom.get('T_hot_map', self.T_hot)
+        if isinstance(hot_boundary, np.ndarray):
+            if hot_boundary.shape != (nx, ny):
+                raise ValueError("The shape of 'T_hot_map' must match the bottom boundary grid (nx, ny).")
+            hot_boundary_temperature = hot_boundary.astype(float)
+        else:
+            hot_boundary_temperature = np.full((nx, ny), float(hot_boundary))
         A_center[:, :, 0] += coeff_b
-        b_matrix[:, :, 0] += coeff_b * self.T_hot
+        b_matrix[:, :, 0] += coeff_b * hot_boundary_temperature
         
         # Top (z=H): Robin (Convection)
         k_top = kappa[:, :, -1]
@@ -240,7 +247,8 @@ class Custom3DFDMSolver:
         field_data = {
             'temperature': T_field,
             'temperature_surface': T_surface,
-            'kappa': kappa
+            'kappa': kappa,
+            'hot_boundary_temperature': hot_boundary_temperature
         }
         
         return mesh_data, field_data

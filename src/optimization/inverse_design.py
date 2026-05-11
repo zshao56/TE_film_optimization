@@ -211,7 +211,11 @@ def screen_candidates(args):
 
     metadata_csv = args.metadata_csv or os.path.join(project_root, "data", "simulations", "metadata.csv")
     root_dir = args.root_dir or os.path.join(project_root, "data", "simulations")
-    dataset = TEFilmDataset(metadata_csv=metadata_csv, root_dir=root_dir)
+    dataset = TEFilmDataset(
+        metadata_csv=metadata_csv,
+        root_dir=root_dir,
+        scalar_cols=["thickness_h", "k_low", "k_high", "T_hot", "T_air"],
+    )
     scalar_mean = dataset.scalar_mean.astype(np.float32)
     scalar_std = dataset.scalar_std.astype(np.float32)
 

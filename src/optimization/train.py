@@ -138,6 +138,7 @@ def train_model(args):
         return_weight=args.top_weight > 1.0,
         top_quantile=args.top_quantile,
         top_weight=args.top_weight,
+        include_boundary_channel=args.include_boundary_channel,
     )
     total_samples = len(dataset)
     print(f"Total successful simulations found: {total_samples}")
@@ -199,7 +200,9 @@ def train_model(args):
     val_loader = DataLoader(val_dataset, shuffle=False, **loader_kwargs)
 
     # Model, Loss, Optimizer
-    model = ThermoNetFusion(scalar_dim=5).to(device)
+    print(f"Scalar inputs ({len(dataset.scalar_cols)}): {dataset.scalar_cols}")
+    print(f"3D input channels: {dataset.input_channels}")
+    model = ThermoNetFusion(scalar_dim=len(dataset.scalar_cols), input_channels=dataset.input_channels).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
@@ -329,6 +332,9 @@ def train_model(args):
                     'target_mean': float(dataset.target_mean),
                     'target_std': float(dataset.target_std),
                     'scalar_cols': dataset.scalar_cols,
+                    'scalar_dim': len(dataset.scalar_cols),
+                    'input_channels': dataset.input_channels,
+                    'include_boundary_channel': args.include_boundary_channel,
                     'target_col': dataset.target_col,
                     'seed': args.seed,
                     'top_quantile': args.top_quantile,
@@ -372,6 +378,7 @@ if __name__ == '__main__':
     parser.add_argument('--top-weight', type=float, default=1.0, help='Loss weight for samples above --top-quantile; 1 disables weighting')
     parser.add_argument('--underpredict-penalty', type=float, default=0.0, help='Extra loss coefficient for underpredicting high-delta-T samples; 0 disables it')
     parser.add_argument('--underpredict-quantile', type=float, default=None, help='Quantile cutoff for underprediction penalty; defaults to --top-quantile')
+    parser.add_argument('--include-boundary-channel', action='store_true', help='Add the hot-boundary temperature map as a second 3D CNN input channel')
     
     args = parser.parse_args()
     train_model(args)

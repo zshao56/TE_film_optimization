@@ -20,6 +20,8 @@ class TEFilmDataset(Dataset):
         return_weight=False,
         top_quantile=None,
         top_weight=1.0,
+        include_boundary_channel=False,
+        scalar_cols=None,
     ):
         """
         Args:
@@ -31,11 +33,29 @@ class TEFilmDataset(Dataset):
         self.transform = transform
         self.normalize_target = normalize_target
         self.return_weight = return_weight
+        self.include_boundary_channel = include_boundary_channel
+        self.input_channels = 2 if include_boundary_channel else 1
         # Only keep successful simulations that have a delta_T_parallel
         df = pd.read_csv(metadata_csv, low_memory=False)
         
         # ENHANCEMENT: Force scalar columns to numeric to handle any lingering corrupt strings
-        self.scalar_cols = ['thickness_h', 'k_low', 'k_high', 'T_hot', 'T_air']
+        base_scalar_cols = ['thickness_h', 'k_low', 'k_high', 'T_hot', 'T_air']
+        expanded_scalar_cols = [
+            'k_ratio', 'h_c', 'h_c_side',
+            'convection_regime_code', 'hot_boundary_type_code',
+            'T_hot_min', 'T_hot_max', 'T_hot_amplitude',
+            'gradient_direction_code', 'hotspot_x', 'hotspot_y', 'hotspot_sigma',
+            'curvature_level', 'arc_angle', 'bend_axis_code',
+            'bend_radius', 'arc_length', 'projected_length',
+            'projected_Lx', 'projected_Ly',
+        ]
+        if scalar_cols is not None:
+            self.scalar_cols = list(scalar_cols)
+        else:
+            self.scalar_cols = base_scalar_cols + [
+                col for col in expanded_scalar_cols
+                if col in df.columns and not df[col].isna().all()
+            ]
         for col in self.scalar_cols:
             df[col] = pd.to_numeric(df[col], errors='coerce')
             
@@ -59,6 +79,10 @@ class TEFilmDataset(Dataset):
         self.target_std = self.data_frame[self.target_col].std()
         if pd.isna(self.target_std) or self.target_std < 1e-6:
             self.target_std = 1e-6
+        self.hot_boundary_mean = float(self.data_frame['T_hot'].mean())
+        self.hot_boundary_std = float(self.data_frame['T_hot'].std())
+        if pd.isna(self.hot_boundary_std) or self.hot_boundary_std < 1e-6:
+            self.hot_boundary_std = 1e-6
 
         self.sample_weights = np.ones(len(self.data_frame), dtype=np.float32)
         if top_quantile is not None and top_weight > 1.0:
@@ -93,14 +117,25 @@ class TEFilmDataset(Dataset):
         
         with h5py.File(h5_path, 'r') as f:
             k_map = f['fields/kappa'][:]  # Correct key is 'kappa', not 'thermal_conductivity'
+            if self.include_boundary_channel and 'fields/hot_boundary_temperature' in f:
+                hot_boundary = f['fields/hot_boundary_temperature'][:]
+            else:
+                hot_boundary = None
             
         # Convert k_map to a binary mask (0 for k_low, 1 for k_high)
         # Using the midpoint as threshold
         threshold = (row['k_low'] + row['k_high']) / 2.0
         mask_3d = (k_map > threshold).astype(np.float32)
+        channels = [mask_3d]
+        if self.include_boundary_channel:
+            if hot_boundary is None:
+                hot_boundary = np.full(mask_3d.shape[:2], float(row['T_hot']), dtype=np.float32)
+            hot_norm = (hot_boundary.astype(np.float32) - self.hot_boundary_mean) / self.hot_boundary_std
+            hot_channel = np.repeat(hot_norm[:, :, np.newaxis], mask_3d.shape[2], axis=2)
+            channels.append(hot_channel.astype(np.float32))
         
         # Add channel dimension for PyTorch 3D CNN: (C, D, H, W) -> (1, nx, ny, nz)
-        mask_tensor = torch.from_numpy(mask_3d).unsqueeze(0).float()  # Ensure float32
+        mask_tensor = torch.from_numpy(np.stack(channels, axis=0)).float()  # Ensure float32
         scalar_tensor = torch.from_numpy(scalars_norm).float()  # Ensure float32
         
         # 3. Target

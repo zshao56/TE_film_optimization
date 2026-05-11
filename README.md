@@ -116,9 +116,26 @@ python src/generate_database.py --samples 50000 --cores 8 --mode mixed --structu
 
 Use `--mode structured` to exclude random-smoothed topologies, or `--mode random` to reproduce the old noise-filtering workflow.
 
+For the expanded application-scenario database, use `--profile expanded`. This widens film thickness and material contrast sampling, adds natural-to-forced convection regimes, supports non-uniform hot-boundary maps, and records flat-to-half-cylinder curvature scenario parameters:
+```bash
+python src/generate_database.py --samples 100000 --cores 8 --mode mixed --structured-ratio 0.8 --seed 42 --profile expanded
+```
+
+When generating the expanded database from scratch, clear old metadata and HDF5 fields first so legacy and expanded schemas do not mix:
+```bash
+rm -f data/simulations/metadata.csv
+rm -f data/simulations/fields/*.h5
+mkdir -p data/simulations/fields logs
+```
+
 Train the surrogate model:
 ```bash
 python src/optimization/train.py --batch-size 32 --epochs 50 --seed 42
+```
+
+For expanded-profile training, include the hot-boundary temperature map as a second CNN channel:
+```bash
+python src/optimization/train.py --batch-size 128 --epochs 80 --seed 42 --workers 4 --normalize-target --top-quantile 0.9 --top-weight 3.0 --include-boundary-channel
 ```
 
 If the first run clearly underestimates the high `delta_T_parallel` region, use the second-stage training setup:

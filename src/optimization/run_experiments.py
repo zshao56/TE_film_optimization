@@ -114,11 +114,13 @@ def _build_train_command(args, run_name, penalty):
     ]
     if args.underpredict_quantile is not None:
         command.extend(["--underpredict-quantile", str(args.underpredict_quantile)])
+    if args.include_boundary_channel:
+        command.append("--include-boundary-channel")
     return command
 
 
 def _build_eval_command(args, run_name):
-    return [
+    command = [
         sys.executable,
         os.path.join("src", "optimization", "evaluate.py"),
         "--model-path",
@@ -136,6 +138,9 @@ def _build_eval_command(args, run_name):
         "--output-dir",
         os.path.join(args.output_root, run_name, "evaluation"),
     ]
+    if args.include_boundary_channel:
+        command.append("--include-boundary-channel")
+    return command
 
 
 def _copy_current_checkpoint(args, run_name):
@@ -572,6 +577,7 @@ if __name__ == "__main__":
     parser.add_argument("--patience", type=int, default=12)
     parser.add_argument("--top-quantile", type=float, default=0.9)
     parser.add_argument("--underpredict-quantile", type=float, default=None)
+    parser.add_argument("--include-boundary-channel", action="store_true", help="Train/evaluate with the hot-boundary temperature map as a second 3D input channel.")
     parser.add_argument("--split", choices=["train", "val", "test", "all"], default="test")
     parser.add_argument("--output-root", type=str, default=os.path.join("results", "experiments"))
     parser.add_argument("--import-current-run", type=str, default=None, help="Copy current results/models/best_thermonet.pth into this run and evaluate it.")

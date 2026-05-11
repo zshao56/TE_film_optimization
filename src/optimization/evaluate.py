@@ -167,7 +167,17 @@ def evaluate_model(args):
     output_dir = os.path.join(project_root, args.output_dir)
     os.makedirs(output_dir, exist_ok=True)
 
-    dataset = TEFilmDataset(metadata_csv=metadata_csv, root_dir=root_dir)
+    state_dict, checkpoint_meta = _load_checkpoint(model_path, device)
+    include_boundary_channel = bool(
+        checkpoint_meta.get("include_boundary_channel", args.include_boundary_channel)
+    )
+    checkpoint_scalar_cols = checkpoint_meta.get("scalar_cols")
+    dataset = TEFilmDataset(
+        metadata_csv=metadata_csv,
+        root_dir=root_dir,
+        include_boundary_channel=include_boundary_channel,
+        scalar_cols=checkpoint_scalar_cols,
+    )
     if len(dataset) == 0:
         raise RuntimeError("No successful samples were found in metadata.csv.")
 
@@ -183,8 +193,11 @@ def evaluate_model(args):
     }
     loader = DataLoader(split_dataset, **loader_kwargs)
 
-    model = ThermoNetFusion(scalar_dim=5).to(device)
-    state_dict, checkpoint_meta = _load_checkpoint(model_path, device)
+    input_channels = int(checkpoint_meta.get("input_channels", dataset.input_channels))
+    scalar_dim = int(checkpoint_meta.get("scalar_dim", len(checkpoint_scalar_cols or dataset.scalar_cols)))
+    print(f"Scalar inputs ({len(dataset.scalar_cols)}): {dataset.scalar_cols}")
+    print(f"Model scalar_dim={scalar_dim}, input_channels={input_channels}")
+    model = ThermoNetFusion(scalar_dim=scalar_dim, input_channels=input_channels).to(device)
     model.load_state_dict(state_dict)
 
     y_true, y_pred = _evaluate_loader(model, loader, device)
@@ -195,9 +208,16 @@ def evaluate_model(args):
         print(f"Checkpoint output unnormalized with target mean={target_mean:.6g}, std={target_std:.6g}")
 
     metadata = dataset.data_frame.iloc[split_indices].reset_index(drop=True).copy()
-    predictions = metadata[
-        ["simulation_id", "geometry_type", "thickness_h", "k_low", "k_high", "T_hot", "T_air"]
-    ].copy()
+    prediction_cols = [
+        col for col in [
+            "simulation_id", "geometry_type", "database_profile", "scenario_id",
+            "thickness_h", "k_low", "k_high", "k_ratio", "T_hot", "T_air",
+            "h_c", "h_c_side", "convection_regime", "hot_boundary_type",
+            "curvature_type", "curvature_level",
+        ]
+        if col in metadata.columns
+    ]
+    predictions = metadata[prediction_cols].copy()
     predictions["delta_T_true"] = y_true
     predictions["delta_T_pred"] = y_pred
     predictions["residual"] = predictions["delta_T_pred"] - predictions["delta_T_true"]
@@ -210,6 +230,14 @@ def evaluate_model(args):
         .reset_index()
         .sort_values(["rmse_K", "mae_K"], ascending=False)
     )
+    per_scenario = None
+    if "scenario_id" in predictions.columns:
+        per_scenario = (
+            predictions.groupby("scenario_id", dropna=False)
+            .apply(lambda group: pd.Series(_metrics(group["delta_T_true"].to_numpy(), group["delta_T_pred"].to_numpy())))
+            .reset_index()
+            .sort_values(["rmse_K", "mae_K"], ascending=False)
+        )
 
     top_quantile_cutoff = predictions["delta_T_true"].quantile(args.top_quantile)
     top_predictions = predictions[predictions["delta_T_true"] >= top_quantile_cutoff]
@@ -223,12 +251,15 @@ def evaluate_model(args):
 
     predictions_path = os.path.join(output_dir, f"predictions_{args.split}.csv")
     per_family_path = os.path.join(output_dir, f"per_family_metrics_{args.split}.csv")
+    per_scenario_path = os.path.join(output_dir, f"per_scenario_metrics_{args.split}.csv")
     metrics_path = os.path.join(output_dir, f"metrics_{args.split}.json")
     scatter_path = _save_scatter(predictions, output_dir, args.split)
     residual_path = _save_residual_histogram(predictions, output_dir, args.split)
 
     predictions.to_csv(predictions_path, index=False)
     per_family.to_csv(per_family_path, index=False)
+    if per_scenario is not None:
+        per_scenario.to_csv(per_scenario_path, index=False)
     with open(metrics_path, "w", encoding="utf-8") as f:
         json.dump(
             {"overall": overall, "top_delta_T_region": top_metrics, "ranking": ranking},
@@ -244,10 +275,15 @@ def evaluate_model(args):
     print(json.dumps(ranking, indent=2))
     print("\nPer-family metrics:")
     print(per_family.to_string(index=False, float_format=lambda value: f"{value:.6g}"))
+    if per_scenario is not None:
+        print("\nWorst scenario metrics:")
+        print(per_scenario.head(15).to_string(index=False, float_format=lambda value: f"{value:.6g}"))
 
     print("\nSaved outputs:")
     print(f"- {metrics_path}")
     print(f"- {per_family_path}")
+    if per_scenario is not None:
+        print(f"- {per_scenario_path}")
     print(f"- {predictions_path}")
     print(f"- {scatter_path}")
     print(f"- {residual_path}")
@@ -264,6 +300,7 @@ if __name__ == "__main__":
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--device", type=str, default="auto", help="auto, cpu, cuda, cuda:0, or mps.")
     parser.add_argument("--output-dir", type=str, default=os.path.join("results", "evaluation"))
+    parser.add_argument("--include-boundary-channel", action="store_true", help="Use hot-boundary map channel when evaluating checkpoints that were trained with it.")
     parser.add_argument(
         "--top-quantile",
         type=float,
