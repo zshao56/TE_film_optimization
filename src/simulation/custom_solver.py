@@ -4,6 +4,16 @@ from scipy.sparse.linalg import spsolve, bicgstab, LinearOperator
 import scipy.sparse.linalg as spla
 import time
 
+
+def _bicgstab_with_compat(A, b, M, rtol=1e-5, maxiter=3000):
+    try:
+        return spla.bicgstab(A, b, M=M, rtol=rtol, maxiter=maxiter)
+    except TypeError as exc:
+        if "rtol" not in str(exc):
+            raise
+        return spla.bicgstab(A, b, M=M, tol=rtol, maxiter=maxiter)
+
+
 class Custom3DFDMSolver:
     """
     A custom 3D Finite Difference Method (FDM) solver for steady-state heat conduction.
@@ -196,7 +206,7 @@ class Custom3DFDMSolver:
             M = spla.LinearOperator((N, N), M_x)
             
             # 2. Iterative solve
-            T_vec, info = spla.bicgstab(A, b, M=M, tol=1e-5, maxiter=3000)
+            T_vec, info = _bicgstab_with_compat(A, b, M=M, rtol=1e-5, maxiter=3000)
             
             if info > 0:
                 print(f"Warning: bicgstab did not converge within maxiter ({info}). Falling back to direct solver.")
