@@ -70,6 +70,40 @@ def _uniform_hot_map(nx, ny, temperature):
     return np.full((nx, ny), temperature, dtype=float)
 
 
+def _hot_map_from_config(nx, ny, hot_config):
+    kind = hot_config.get("kind", hot_config.get("type", "uniform"))
+    if kind == "uniform":
+        return _uniform_hot_map(nx, ny, float(hot_config["temperature"]))
+    if kind in {"center_hotspot", "gaussian_hotspot"}:
+        return _center_hot_map(
+            nx,
+            ny,
+            edge_temp=float(hot_config["edge_temp"]),
+            center_temp=float(hot_config["center_temp"]),
+            sigma=float(hot_config.get("sigma", 0.23)),
+        )
+    if kind == "linear_gradient":
+        return _linear_hot_map(
+            nx,
+            ny,
+            cold_temp=float(hot_config["cold_temp"]),
+            hot_temp=float(hot_config["hot_temp"]),
+            direction=hot_config.get("direction", "x"),
+        )
+    raise ValueError(f"Unsupported real-world hot boundary kind: {kind}")
+
+
+def _boundary_type_from_hot_config(hot_config):
+    kind = hot_config.get("kind", hot_config.get("type", "uniform"))
+    if kind == "center_hotspot":
+        return "gaussian_hotspot"
+    if kind in HOT_BOUNDARY_TYPE_CODES:
+        return kind
+    if kind == "linear_gradient":
+        return "linear_gradient"
+    raise ValueError(f"Unsupported real-world hot boundary kind: {kind}")
+
+
 def _hot_boundary_metadata(hot_map, boundary_type, gradient_direction_code=0):
     return {
         "T_hot": float(np.mean(hot_map)),
@@ -120,7 +154,27 @@ def _curvature_metadata(level, Lx, Ly, bend_axis="x"):
     }
 
 
-def _scenario_definitions(nx, ny):
+def _scenario_from_config(config, nx, ny):
+    hot_config = config["hot_boundary"]
+    return {
+        "key": config["key"],
+        "label": config.get("label", config["key"]),
+        "description": config.get("description", ""),
+        "T_air": float(config.get("T_air", 298.15)),
+        "h_c": float(config["h_c"]),
+        "h_c_side": float(config.get("h_c_side", config["h_c"])),
+        "hot_map": _hot_map_from_config(nx, ny, hot_config),
+        "hot_boundary_type": _boundary_type_from_hot_config(hot_config),
+        "curvature_level": float(config.get("curvature_level", 0.0)),
+        "bend_axis": config.get("bend_axis", "x"),
+        "gradient_direction_code": 0 if hot_config.get("direction", "x") == "x" else 1,
+    }
+
+
+def _scenario_definitions(nx, ny, scenario_configs=None):
+    if scenario_configs is not None:
+        return [_scenario_from_config(config, nx, ny) for config in scenario_configs]
+
     return [
         {
             "key": "battery_ac_half_cylinder",
@@ -468,7 +522,7 @@ def run_benchmark(args):
     )
     os.makedirs(output_dir, exist_ok=True)
 
-    scenarios = _scenario_definitions(args.nx, args.ny)
+    scenarios = _scenario_definitions(args.nx, args.ny, getattr(args, "scenarios", None))
     scenario_path = _write_scenario_table(scenarios, output_dir)
     print(f"Saved scenario definitions to {scenario_path}")
 
@@ -505,6 +559,7 @@ def run_benchmark(args):
 
 def build_parser():
     parser = argparse.ArgumentParser(description="Run fair real-world scenario benchmarks with surrogate screening plus FDM verification.")
+    parser.add_argument("--config", type=str, default=None, help="Optional JSON pipeline/config file. Uses the real_world_benchmark section when present.")
     parser.add_argument("--model-path", type=str, default=os.path.join(project_root, "results", "models", "best_thermonet.pth"))
     parser.add_argument("--metadata-csv", type=str, default=None)
     parser.add_argument("--root-dir", type=str, default=None)
@@ -528,5 +583,19 @@ def build_parser():
     return parser
 
 
+def _apply_config(args):
+    if args.config is None:
+        return args
+    with open(args.config, "r", encoding="utf-8") as f:
+        config = json.load(f)
+    benchmark_config = config.get("real_world_benchmark", config)
+    for key, value in benchmark_config.items():
+        if key == "scenarios":
+            setattr(args, "scenarios", value)
+        elif hasattr(args, key):
+            setattr(args, key, value)
+    return args
+
+
 if __name__ == "__main__":
-    run_benchmark(build_parser().parse_args())
+    run_benchmark(_apply_config(build_parser().parse_args()))

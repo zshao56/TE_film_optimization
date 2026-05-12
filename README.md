@@ -121,6 +121,29 @@ For the expanded application-scenario database, use `--profile expanded`. This w
 python src/generate_database.py --samples 100000 --cores 8 --mode mixed --structured-ratio 0.8 --seed 42 --profile expanded
 ```
 
+For full reproducibility, the whole workflow can be driven from one JSON config file. Edit `configs/expanded_pipeline_real_world.json` to change database sampling ranges, training hyperparameters, GPU visibility, and real-world verification scenarios. The top-level `run` block controls which stages execute:
+
+```json
+"run": {
+  "data_generation": false,
+  "training": false,
+  "evaluation": false,
+  "real_world_benchmark": true
+}
+```
+
+Then run:
+
+```bash
+python -u src/optimization/run_configured_pipeline.py --config configs/expanded_pipeline_real_world.json
+```
+
+The same config can also be passed directly to data generation:
+
+```bash
+python src/generate_database.py --config configs/expanded_pipeline_real_world.json
+```
+
 When generating the expanded database from scratch, clear old metadata and HDF5 fields first so legacy and expanded schemas do not mix:
 ```bash
 rm -f data/simulations/metadata.csv

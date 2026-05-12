@@ -121,6 +121,29 @@ python src/generate_database.py --samples 50000 --cores 8 --mode mixed --structu
 python src/generate_database.py --samples 100000 --cores 8 --mode mixed --structured-ratio 0.8 --seed 42 --profile expanded
 ```
 
+为了保证下一轮完整实验可复现，现在可以用一个 JSON 配置文件驱动整条链路。修改 `configs/expanded_pipeline_real_world.json` 即可统一调整数据采样范围、训练 batch/GPU/epoch 参数，以及现实验证场景。最上层的 `run` 字段控制是否执行某个阶段：
+
+```json
+"run": {
+  "data_generation": false,
+  "training": false,
+  "evaluation": false,
+  "real_world_benchmark": true
+}
+```
+
+然后一条命令运行：
+
+```bash
+python -u src/optimization/run_configured_pipeline.py --config configs/expanded_pipeline_real_world.json
+```
+
+同一个配置文件也可以单独传给数据生成脚本：
+
+```bash
+python src/generate_database.py --config configs/expanded_pipeline_real_world.json
+```
+
 如果是从零生成新版数据库，先清空旧的 `metadata.csv` 和 HDF5 场文件，避免旧版/新版 schema 混在一起：
 ```bash
 rm -f data/simulations/metadata.csv
