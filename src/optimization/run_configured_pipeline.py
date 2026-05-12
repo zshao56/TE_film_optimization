@@ -109,10 +109,30 @@ def run_data_generation(config, config_path):
     _run_command(command, data_config.get("log_path", "logs/01_generate_configured.log"), env=_env_for_stage(config, data_config))
 
 
+def run_metadata_filter(config):
+    filter_config = config.get("metadata_filter", {})
+    command = [sys.executable, "scripts/filter_physical_metadata.py"]
+    option_map = {
+        "metadata": "--metadata",
+        "output": "--output",
+        "bad_output": "--bad-output",
+        "report": "--report",
+        "tolerance": "--tolerance",
+        "max_relative_residual": "--max-relative-residual",
+        "head": "--head",
+    }
+    for key, flag in option_map.items():
+        _append_option(command, filter_config, key, flag)
+    _bool_arg(command, filter_config.get("require_qc_pass", False), "--require-qc-pass")
+    _run_command(command, filter_config.get("log_path", "logs/01b_filter_metadata_configured.log"), env=_env_for_stage(config, filter_config))
+
+
 def run_training(config):
     train_config = config.get("training", {})
     command = [sys.executable, "src/optimization/train.py"]
     option_map = {
+        "metadata_csv": "--metadata-csv",
+        "root_dir": "--root-dir",
         "batch_size": "--batch-size",
         "epochs": "--epochs",
         "lr": "--lr",
@@ -180,6 +200,8 @@ def run_pipeline(config_path):
     config = _load_config(config_path)
     if _stage_enabled(config, "data_generation"):
         run_data_generation(config, config_path)
+    if _stage_enabled(config, "metadata_filter"):
+        run_metadata_filter(config)
     if _stage_enabled(config, "training"):
         run_training(config)
     if _stage_enabled(config, "evaluation"):

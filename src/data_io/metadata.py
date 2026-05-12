@@ -32,9 +32,11 @@ REQUIRED_COLUMNS = [
     'bend_axis_code', 'bend_radius', 'arc_length', 'projected_length',
     'projected_Lx', 'projected_Ly',
     'solver_method_code', 'solver_info', 'solver_relative_residual',
-    'solver_temperature_min', 'solver_temperature_max',
-    'solver_lower_bound', 'solver_upper_bound', 'solver_bounds_pass',
-    'surface_bounds_pass', 'surface_min_bound_violation',
+    'solver_iteration_count', 'solver_fallback_reason_code',
+    'solver_residual_tolerance', 'solver_temperature_min', 'solver_temperature_max',
+    'solver_lower_bound', 'solver_upper_bound', 'solver_bounds_tolerance',
+    'solver_bounds_pass',
+    'surface_bounds_pass', 'surface_temperature_range', 'surface_min_bound_violation',
     'surface_max_bound_violation'
 ]
 

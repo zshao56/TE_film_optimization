@@ -33,6 +33,13 @@ def run_simulation_pipeline(geom_params, sim_id):
         mesh_data, field_data = solver.solve()
     finally:
         solver.cleanup()
+    if not field_data.get('solver_bounds_pass') or not field_data.get('surface_bounds_pass'):
+        raise RuntimeError(
+            f"Simulation {sim_id} failed physical solver checks: "
+            f"solver_bounds_pass={field_data.get('solver_bounds_pass')}, "
+            f"surface_bounds_pass={field_data.get('surface_bounds_pass')}, "
+            f"residual={field_data.get('solver_relative_residual')}."
+        )
     
     # Postprocess (2D Top Surface Area Measurement)
     wx, wy = 0.05 * Lx, 0.05 * Ly
@@ -113,13 +120,18 @@ def run_simulation_pipeline(geom_params, sim_id):
         'field_file': h5_path,
         'solver_method_code': field_data.get('solver_method_code'),
         'solver_info': field_data.get('solver_info'),
+        'solver_iteration_count': field_data.get('solver_iteration_count'),
+        'solver_fallback_reason_code': field_data.get('solver_fallback_reason_code'),
         'solver_relative_residual': field_data.get('solver_relative_residual'),
+        'solver_residual_tolerance': field_data.get('solver_residual_tolerance'),
         'solver_temperature_min': field_data.get('solver_temperature_min'),
         'solver_temperature_max': field_data.get('solver_temperature_max'),
         'solver_lower_bound': field_data.get('solver_lower_bound'),
         'solver_upper_bound': field_data.get('solver_upper_bound'),
+        'solver_bounds_tolerance': field_data.get('solver_bounds_tolerance'),
         'solver_bounds_pass': field_data.get('solver_bounds_pass'),
         'surface_bounds_pass': field_data.get('surface_bounds_pass'),
+        'surface_temperature_range': field_data.get('surface_temperature_range'),
         'surface_min_bound_violation': field_data.get('surface_min_bound_violation'),
         'surface_max_bound_violation': field_data.get('surface_max_bound_violation')
     }

@@ -1,8 +1,9 @@
 {
   "run": {
-    "data_generation": false,
-    "training": false,
-    "evaluation": false,
+    "data_generation": true,
+    "metadata_filter": true,
+    "training": true,
+    "evaluation": true,
     "real_world_benchmark": true
   },
   "environment": {
@@ -18,9 +19,9 @@
     "structured_ratio": 0.8,
     "seed": 42,
     "profile": "expanded",
-    "clear_existing": false,
-    "allow_delete_data": false,
-    "log_path": "logs/01_generate_expanded_configured.log",
+    "clear_existing": true,
+    "allow_delete_data": true,
+    "log_path": "logs/01_generate_expanded_rebuild_v1.log",
     "grid": {
       "Lx": 0.01,
       "Ly": 0.01,
@@ -86,9 +87,21 @@
       }
     }
   },
+  "metadata_filter": {
+    "metadata": "data/simulations/metadata.csv",
+    "output": "data/simulations/metadata_clean.csv",
+    "bad_output": "results/metadata/expanded_rebuild_v1/bad_physical_rows.csv",
+    "report": "results/metadata/expanded_rebuild_v1/physical_sanity_by_scenario.csv",
+    "tolerance": 0.001,
+    "max_relative_residual": 1e-8,
+    "require_qc_pass": true,
+    "log_path": "logs/01b_filter_metadata_expanded_rebuild_v1.log"
+  },
   "training": {
     "cuda_visible_devices": "1",
-    "batch_size": 128,
+    "metadata_csv": "data/simulations/metadata_clean.csv",
+    "root_dir": "data/simulations",
+    "batch_size": 512,
     "epochs": 80,
     "seed": 42,
     "workers": 8,
@@ -100,24 +113,28 @@
     "top_quantile": 0.9,
     "top_weight": 3.0,
     "include_boundary_channel": true,
-    "run_name": "expanded_v2_configured",
-    "metadata_report_dir": "results/metadata/expanded_v2_configured",
-    "log_path": "logs/02_train_expanded_v2_configured.log"
+    "run_name": "expanded_rebuild_v1",
+    "metadata_report_dir": "results/metadata/expanded_rebuild_v1",
+    "log_path": "logs/02_train_expanded_rebuild_v1.log"
   },
   "evaluation": {
     "cuda_visible_devices": "1",
     "model_path": "results/models/best_thermonet.pth",
+    "metadata_csv": "data/simulations/metadata_clean.csv",
+    "root_dir": "data/simulations",
     "splits": ["val", "test"],
     "seed": 42,
     "batch_size": 256,
     "workers": 8,
     "top_quantile": 0.9,
-    "output_dir": "results/evaluation/expanded_v2_configured",
-    "log_path_template": "logs/03_eval_expanded_v2_{split}.log"
+    "output_dir": "results/evaluation/expanded_rebuild_v1",
+    "log_path_template": "logs/03_eval_expanded_rebuild_v1_{split}.log"
   },
   "real_world_benchmark": {
     "cuda_visible_devices": "1",
     "model_path": "results/models/best_thermonet.pth",
+    "metadata_csv": "data/simulations/metadata_clean.csv",
+    "root_dir": "data/simulations",
     "num_candidates": 50000,
     "top_k": 500,
     "verify_count": 50,
@@ -127,8 +144,8 @@
     "seed": 20260512,
     "mode": "mixed",
     "structured_ratio": 0.9,
-    "output_dir": "results/real_world_benchmarks/expanded_v2_configured",
-    "log_path": "logs/04_real_world_benchmark_configured.log",
+    "output_dir": "results/real_world_benchmarks/expanded_rebuild_v1",
+    "log_path": "logs/04_real_world_benchmark_expanded_rebuild_v1.log",
     "scenarios": [
       {
         "key": "battery_ac_half_cylinder",

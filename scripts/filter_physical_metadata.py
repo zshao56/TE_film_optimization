@@ -31,6 +31,7 @@ def filter_metadata(args):
     delta = _numeric(df, "delta_T_parallel")
     hot_electrode = _numeric(df, "T_hot_electrode_avg")
     cold_electrode = _numeric(df, "T_cold_electrode_avg")
+    solver_residual = _numeric(df, "solver_relative_residual")
 
     lower_bound = pd.concat([T_air, T_hot_min], axis=1).min(axis=1)
     upper_bound = pd.concat([T_air, T_hot_max], axis=1).max(axis=1)
@@ -45,8 +46,9 @@ def filter_metadata(args):
         if col in df.columns:
             values = pd.to_numeric(df[col], errors="coerce")
             bad_solver |= values.notna() & (values < 1)
+    bad_residual = solver_residual.notna() & (solver_residual > args.max_relative_residual)
 
-    bad_any = bad_delta | bad_hot | bad_cold | bad_solver
+    bad_any = bad_delta | bad_hot | bad_cold | bad_solver | bad_residual
     if args.require_qc_pass and "qc_pass" in df.columns:
         qc_pass = df["qc_pass"].astype(str).str.lower().isin(["true", "1", "yes"])
         bad_any |= ~qc_pass
@@ -59,6 +61,7 @@ def filter_metadata(args):
     annotated["bad_hot_electrode_bound"] = bad_hot
     annotated["bad_cold_electrode_bound"] = bad_cold
     annotated["bad_solver_bounds"] = bad_solver
+    annotated["bad_solver_residual"] = bad_residual
     annotated["bad_any"] = bad_any
 
     clean_df = df.loc[~bad_any].copy()
@@ -87,6 +90,7 @@ def filter_metadata(args):
     print(f"bad_hot_electrode_bound: {int(bad_hot.sum())}")
     print(f"bad_cold_electrode_bound: {int(bad_cold.sum())}")
     print(f"bad_solver_bounds: {int(bad_solver.sum())}")
+    print(f"bad_solver_residual: {int(bad_residual.sum())}")
     print("\nWorst scenarios:")
     print(summary.head(args.head).to_string(index=False))
     print(f"\nWrote clean metadata to: {output_path}")
@@ -101,6 +105,7 @@ def build_parser():
     parser.add_argument("--bad-output", default=os.path.join("results", "metadata", "bad_physical_rows.csv"))
     parser.add_argument("--report", default=os.path.join("results", "metadata", "physical_sanity_by_scenario.csv"))
     parser.add_argument("--tolerance", type=float, default=1e-3)
+    parser.add_argument("--max-relative-residual", type=float, default=1e-8)
     parser.add_argument("--head", type=int, default=20)
     parser.add_argument("--require-qc-pass", action="store_true", help="Also drop rows where qc_pass is not true.")
     return parser

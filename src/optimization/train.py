@@ -127,8 +127,7 @@ def train_model(args):
     root_dir = args.root_dir or os.path.join(project_root, 'data', 'simulations')
     
     if not os.path.exists(metadata_csv):
-        print(f"Error: Database not found at {metadata_csv}. Please generate data first.")
-        return
+        raise FileNotFoundError(f"Database not found at {metadata_csv}. Please generate and filter data first.")
 
     print("Loading dataset (this may take a moment to scan the CSV)...")
     dataset = TEFilmDataset(
@@ -144,8 +143,7 @@ def train_model(args):
     print(f"Total successful simulations found: {total_samples}")
 
     if total_samples == 0:
-        print("Dataset is empty. Run generate_database.py first.")
-        return
+        raise RuntimeError("Dataset is empty. Run generate_database.py and metadata filtering first.")
 
     # Train/Val/Test Split (80% / 10% / 10%)
     train_size = int(0.8 * total_samples)
