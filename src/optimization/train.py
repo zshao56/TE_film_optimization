@@ -123,8 +123,8 @@ def train_model(args):
     print(f"Using device: {device}")
 
     # Paths
-    metadata_csv = os.path.join(project_root, 'data', 'simulations', 'metadata.csv')
-    root_dir = os.path.join(project_root, 'data', 'simulations')
+    metadata_csv = args.metadata_csv or os.path.join(project_root, 'data', 'simulations', 'metadata.csv')
+    root_dir = args.root_dir or os.path.join(project_root, 'data', 'simulations')
     
     if not os.path.exists(metadata_csv):
         print(f"Error: Database not found at {metadata_csv}. Please generate data first.")
@@ -372,6 +372,8 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducible splits')
     parser.add_argument('--run-name', type=str, default='thermonet_training', help='TensorBoard run directory under runs/')
     parser.add_argument('--metadata-report-dir', type=str, default=os.path.join('results', 'metadata'), help='Directory for split-labeled metadata reports')
+    parser.add_argument('--metadata-csv', type=str, default=None, help='Path to metadata.csv')
+    parser.add_argument('--root-dir', type=str, default=None, help='Directory containing the fields/ folder')
     parser.add_argument('--workers', type=int, default=4, help='Number of DataLoader workers')
     parser.add_argument('--normalize-target', action='store_true', help='Train on Z-score normalized delta_T targets')
     parser.add_argument('--top-quantile', type=float, default=0.9, help='High delta_T quantile used for optional weighted loss')

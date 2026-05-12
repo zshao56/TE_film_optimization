@@ -15,9 +15,34 @@ def _bicgstab_with_compat(A, b, M, rtol=1e-5, maxiter=3000):
 
 
 def _max_principle_violation(T_vec, lower_bound, upper_bound, tolerance=1e-3):
+    if not np.all(np.isfinite(T_vec)):
+        return True, np.inf, np.inf
     min_violation = lower_bound - float(np.min(T_vec))
     max_violation = float(np.max(T_vec)) - upper_bound
     return max(min_violation, max_violation) > tolerance, min_violation, max_violation
+
+
+def _relative_residual(A, x, b):
+    residual = A.dot(x) - b
+    return float(np.linalg.norm(residual) / (np.linalg.norm(b) + 1e-30))
+
+
+def _solution_diagnostics(A, b, T_vec, lower_bound, upper_bound, tolerance=1e-3):
+    violates, min_violation, max_violation = _max_principle_violation(
+        T_vec,
+        lower_bound,
+        upper_bound,
+        tolerance=tolerance,
+    )
+    return {
+        'finite': bool(np.all(np.isfinite(T_vec))),
+        'relative_residual': _relative_residual(A, T_vec, b) if np.all(np.isfinite(T_vec)) else np.inf,
+        'temperature_min': float(np.nanmin(T_vec)),
+        'temperature_max': float(np.nanmax(T_vec)),
+        'bounds_pass': not violates,
+        'min_bound_violation': float(min_violation),
+        'max_bound_violation': float(max_violation),
+    }
 
 
 class Custom3DFDMSolver:
@@ -209,9 +234,15 @@ class Custom3DFDMSolver:
         # print(f"Matrix built in {time.time() - t0:.2f} s. Solving system (N={N})...")
         t0 = time.time()
         
-        # PERFORMANCE OPTIMIZATION: 
-        # `spsolve` (direct solver) is too slow for 3D matrices > 40,000 nodes, especially on Windows where memory/cache behaves differently.
-        # We switch to an iterative solver `bicgstab` with Incomplete LU (ILU) preconditioning.
+        lower_bound = min(float(self.T_air), float(np.min(hot_boundary_temperature)))
+        upper_bound = max(float(self.T_air), float(np.max(hot_boundary_temperature)))
+        solver_method = 'bicgstab_ilu'
+        solver_info = 0
+        fallback_reason = ''
+
+        # PERFORMANCE OPTIMIZATION:
+        # Try iterative bicgstab with ILU preconditioning first. Accept it only
+        # when both residual and thermal maximum-principle checks pass.
         try:
             # 1. Create ILU preconditioner
             ilu = spla.spilu(A, drop_tol=1e-4, fill_factor=10)
@@ -220,39 +251,51 @@ class Custom3DFDMSolver:
             
             # 2. Iterative solve
             T_vec, info = _bicgstab_with_compat(A, b, M=M, rtol=1e-5, maxiter=3000)
+            solver_info = int(info)
             
             if info > 0:
-                print(f"Warning: bicgstab did not converge within maxiter ({info}). Falling back to direct solver.")
-                T_vec = spsolve(A, b)
+                fallback_reason = f"bicgstab did not converge within maxiter ({info})"
             elif info < 0:
-                print(f"Warning: bicgstab illegal input/breakdown ({info}). Falling back to direct solver.")
-                T_vec = spsolve(A, b)
+                fallback_reason = f"bicgstab illegal input/breakdown ({info})"
                 
-        except RuntimeError:
+        except RuntimeError as exc:
             # If ILU fails (e.g. exactly singular matrix layout), fallback to direct solver
-            print("Warning: ILU preconditioner failed. Falling back to direct solver.")
-            T_vec = spsolve(A, b)
+            T_vec = None
+            solver_info = -999
+            fallback_reason = f"ILU preconditioner failed: {exc}"
             
         # print(f"System solved in {time.time() - t0:.2f} s.")
 
-        lower_bound = min(float(self.T_air), float(np.min(hot_boundary_temperature)))
-        upper_bound = max(float(self.T_air), float(np.max(hot_boundary_temperature)))
-        violates, min_violation, max_violation = _max_principle_violation(T_vec, lower_bound, upper_bound)
-        if violates:
+        if fallback_reason == '':
+            diagnostics = _solution_diagnostics(A, b, T_vec, lower_bound, upper_bound)
+            if diagnostics['relative_residual'] > 1e-5:
+                fallback_reason = f"relative residual too large ({diagnostics['relative_residual']:.6g})"
+            elif not diagnostics['bounds_pass']:
+                fallback_reason = (
+                    "thermal bounds violated "
+                    f"(below by {diagnostics['min_bound_violation']:.6g} K, "
+                    f"above by {diagnostics['max_bound_violation']:.6g} K)"
+                )
+            elif not diagnostics['finite']:
+                fallback_reason = "non-finite iterative solution"
+
+        if fallback_reason:
             print(
-                "Warning: iterative FDM solution violates thermal bounds "
-                f"[{lower_bound:.6g}, {upper_bound:.6g}] K "
-                f"(below by {min_violation:.6g} K, above by {max_violation:.6g} K). "
+                f"Warning: iterative FDM solution rejected ({fallback_reason}). "
                 "Falling back to direct solver."
             )
             T_vec = spsolve(A, b)
-            violates, min_violation, max_violation = _max_principle_violation(T_vec, lower_bound, upper_bound)
-            if violates:
+            solver_method = 'spsolve'
+            diagnostics = _solution_diagnostics(A, b, T_vec, lower_bound, upper_bound)
+            if not diagnostics['bounds_pass']:
                 print(
                     "Warning: direct FDM solution still violates thermal bounds "
                     f"[{lower_bound:.6g}, {upper_bound:.6g}] K "
-                    f"(below by {min_violation:.6g} K, above by {max_violation:.6g} K)."
+                    f"(below by {diagnostics['min_bound_violation']:.6g} K, "
+                    f"above by {diagnostics['max_bound_violation']:.6g} K)."
                 )
+        else:
+            diagnostics = _solution_diagnostics(A, b, T_vec, lower_bound, upper_bound)
         
         T_field = T_vec.reshape((nx, ny, nz))
         
@@ -269,6 +312,7 @@ class Custom3DFDMSolver:
                 f"[{lower_bound:.6g}, {upper_bound:.6g}] K "
                 f"(below by {surface_min_violation:.6g} K, above by {surface_max_violation:.6g} K)."
             )
+        surface_bounds_pass = not violates_surface
         
         x_coords = np.linspace(dx/2, Lx - dx/2, nx)
         y_coords = np.linspace(dy/2, Ly - dy/2, ny)
@@ -284,7 +328,18 @@ class Custom3DFDMSolver:
             'temperature': T_field,
             'temperature_surface': T_surface,
             'kappa': kappa,
-            'hot_boundary_temperature': hot_boundary_temperature
+            'hot_boundary_temperature': hot_boundary_temperature,
+            'solver_method_code': 0 if solver_method == 'bicgstab_ilu' else 1,
+            'solver_info': solver_info,
+            'solver_relative_residual': diagnostics['relative_residual'],
+            'solver_temperature_min': diagnostics['temperature_min'],
+            'solver_temperature_max': diagnostics['temperature_max'],
+            'solver_lower_bound': lower_bound,
+            'solver_upper_bound': upper_bound,
+            'solver_bounds_pass': int(diagnostics['bounds_pass']),
+            'surface_bounds_pass': int(surface_bounds_pass),
+            'surface_min_bound_violation': float(surface_min_violation),
+            'surface_max_bound_violation': float(surface_max_violation)
         }
         
         return mesh_data, field_data

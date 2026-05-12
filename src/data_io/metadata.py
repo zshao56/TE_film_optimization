@@ -30,7 +30,12 @@ REQUIRED_COLUMNS = [
     'hotspot_sigma',
     'curvature_type', 'curvature_level', 'arc_angle', 'bend_axis',
     'bend_axis_code', 'bend_radius', 'arc_length', 'projected_length',
-    'projected_Lx', 'projected_Ly'
+    'projected_Lx', 'projected_Ly',
+    'solver_method_code', 'solver_info', 'solver_relative_residual',
+    'solver_temperature_min', 'solver_temperature_max',
+    'solver_lower_bound', 'solver_upper_bound', 'solver_bounds_pass',
+    'surface_bounds_pass', 'surface_min_bound_violation',
+    'surface_max_bound_violation'
 ]
 
 def ensure_dirs():

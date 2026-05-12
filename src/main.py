@@ -110,7 +110,18 @@ def run_simulation_pipeline(geom_params, sim_id):
         'measurement_wy': wy,
         'electrode_min_gap': s_min,
         'qc_pass': qc_pass,
-        'field_file': h5_path
+        'field_file': h5_path,
+        'solver_method_code': field_data.get('solver_method_code'),
+        'solver_info': field_data.get('solver_info'),
+        'solver_relative_residual': field_data.get('solver_relative_residual'),
+        'solver_temperature_min': field_data.get('solver_temperature_min'),
+        'solver_temperature_max': field_data.get('solver_temperature_max'),
+        'solver_lower_bound': field_data.get('solver_lower_bound'),
+        'solver_upper_bound': field_data.get('solver_upper_bound'),
+        'solver_bounds_pass': field_data.get('solver_bounds_pass'),
+        'surface_bounds_pass': field_data.get('surface_bounds_pass'),
+        'surface_min_bound_violation': field_data.get('surface_min_bound_violation'),
+        'surface_max_bound_violation': field_data.get('surface_max_bound_violation')
     }
     
     if best_electrodes:
