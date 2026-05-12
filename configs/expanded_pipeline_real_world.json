@@ -7,7 +7,8 @@
     "real_world_benchmark": true
   },
   "environment": {
-    "cuda_visible_devices": "1",
+    "cuda_visible_devices": "auto",
+    "auto_cuda_devices": [0, 1],
     "omp_num_threads": "1",
     "mkl_num_threads": "1",
     "openblas_num_threads": "1"
@@ -98,7 +99,7 @@
     "log_path": "logs/01b_filter_metadata_expanded_rebuild_v1.log"
   },
   "training": {
-    "cuda_visible_devices": "1",
+    "cuda_visible_devices": "auto",
     "metadata_csv": "data/simulations/metadata_clean.csv",
     "root_dir": "data/simulations",
     "batch_size": 512,
@@ -118,20 +119,20 @@
     "log_path": "logs/02_train_expanded_rebuild_v1.log"
   },
   "evaluation": {
-    "cuda_visible_devices": "1",
+    "cuda_visible_devices": "auto",
     "model_path": "results/models/best_thermonet.pth",
     "metadata_csv": "data/simulations/metadata_clean.csv",
     "root_dir": "data/simulations",
     "splits": ["val", "test"],
     "seed": 42,
-    "batch_size": 256,
+    "batch_size": 512,
     "workers": 8,
     "top_quantile": 0.9,
     "output_dir": "results/evaluation/expanded_rebuild_v1",
     "log_path_template": "logs/03_eval_expanded_rebuild_v1_{split}.log"
   },
   "real_world_benchmark": {
-    "cuda_visible_devices": "1",
+    "cuda_visible_devices": "auto",
     "model_path": "results/models/best_thermonet.pth",
     "metadata_csv": "data/simulations/metadata_clean.csv",
     "root_dir": "data/simulations",

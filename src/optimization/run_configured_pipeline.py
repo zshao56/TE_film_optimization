@@ -9,6 +9,7 @@ from pathlib import Path
 current_dir = Path(__file__).resolve().parent
 src_dir = current_dir.parent
 project_root = src_dir.parent
+AUTO_CUDA_VALUES = {"auto", "least_busy", "most_free"}
 
 
 def _load_config(path):
@@ -20,6 +21,96 @@ def _stage_enabled(config, key):
     return bool(config.get("run", {}).get(key, False))
 
 
+def _cuda_value(config, stage_config):
+    base_env = config.get("environment", {})
+    return stage_config.get("cuda_visible_devices", base_env.get("cuda_visible_devices"))
+
+
+def _is_auto_cuda(value):
+    return isinstance(value, str) and value.strip().lower() in AUTO_CUDA_VALUES
+
+
+def _parse_cuda_candidates(config):
+    candidates = config.get("environment", {}).get("auto_cuda_devices", [0, 1])
+    return {str(candidate) for candidate in candidates}
+
+
+def _query_cuda_devices():
+    command = [
+        "nvidia-smi",
+        "--query-gpu=index,memory.free,memory.used,utilization.gpu",
+        "--format=csv,noheader,nounits",
+    ]
+    result = subprocess.run(command, capture_output=True, text=True, check=True)
+    devices = []
+    for line in result.stdout.splitlines():
+        parts = [part.strip() for part in line.split(",")]
+        if len(parts) != 4:
+            continue
+        index, memory_free, memory_used, utilization = parts
+        devices.append(
+            {
+                "index": index,
+                "memory_free_mib": int(memory_free),
+                "memory_used_mib": int(memory_used),
+                "utilization_pct": int(utilization),
+            }
+        )
+    if not devices:
+        raise RuntimeError("nvidia-smi returned no CUDA devices.")
+    return devices
+
+
+def _select_cuda_device(config):
+    candidates = _parse_cuda_candidates(config)
+    devices = [device for device in _query_cuda_devices() if device["index"] in candidates]
+    if not devices:
+        raise RuntimeError(f"No CUDA devices matched configured candidates: {sorted(candidates)}")
+
+    selected = sorted(
+        devices,
+        key=lambda device: (
+            -device["memory_free_mib"],
+            device["utilization_pct"],
+            device["memory_used_mib"],
+            int(device["index"]),
+        ),
+    )[0]
+    print("CUDA device status:")
+    for device in devices:
+        selected_marker = " <- selected" if device["index"] == selected["index"] else ""
+        print(
+            f"  GPU {device['index']}: free={device['memory_free_mib']} MiB, "
+            f"used={device['memory_used_mib']} MiB, util={device['utilization_pct']}%"
+            f"{selected_marker}"
+        )
+    return selected["index"]
+
+
+def _resolve_auto_cuda(config):
+    stage_configs = [
+        config.get("data_generation", {}),
+        config.get("metadata_filter", {}),
+        config.get("training", {}),
+        config.get("evaluation", {}),
+        config.get("real_world_benchmark", {}),
+    ]
+    if not any(_is_auto_cuda(_cuda_value(config, stage_config)) for stage_config in stage_configs):
+        return config
+
+    selected = _select_cuda_device(config)
+    resolved = dict(config)
+    environment = dict(resolved.get("environment", {}))
+    environment["cuda_visible_devices"] = selected
+    resolved["environment"] = environment
+    for key in ["data_generation", "metadata_filter", "training", "evaluation", "real_world_benchmark"]:
+        stage_config = dict(resolved.get(key, {}))
+        if _is_auto_cuda(stage_config.get("cuda_visible_devices")):
+            stage_config["cuda_visible_devices"] = selected
+            resolved[key] = stage_config
+    return resolved
+
+
 def _env_for_stage(config, stage_config):
     env = os.environ.copy()
     base_env = config.get("environment", {})
@@ -27,7 +118,7 @@ def _env_for_stage(config, stage_config):
         env[str(key).upper()] = str(value)
     for key, value in stage_config.get("environment", {}).items():
         env[str(key).upper()] = str(value)
-    cuda = stage_config.get("cuda_visible_devices", base_env.get("cuda_visible_devices"))
+    cuda = _cuda_value(config, stage_config)
     if cuda is not None:
         env["CUDA_VISIBLE_DEVICES"] = str(cuda)
     return env
@@ -197,7 +288,7 @@ def run_real_world_benchmark(config, config_path):
 
 def run_pipeline(config_path):
     config_path = Path(config_path).resolve()
-    config = _load_config(config_path)
+    config = _resolve_auto_cuda(_load_config(config_path))
     if _stage_enabled(config, "data_generation"):
         run_data_generation(config, config_path)
     if _stage_enabled(config, "metadata_filter"):
