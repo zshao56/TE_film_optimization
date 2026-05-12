@@ -460,6 +460,42 @@ def _summarize_verified(scenario, verified_df):
     }
 
 
+def _sanity_check_verified(scenario, verified_df, tolerance=1e-3):
+    clean = verified_df.dropna(subset=["fdm_delta_T"]).copy()
+    if clean.empty:
+        return clean
+
+    hot_min = float(np.min(scenario["hot_map"]))
+    hot_max = float(np.max(scenario["hot_map"]))
+    lower_bound = min(float(scenario["T_air"]), hot_min)
+    upper_bound = max(float(scenario["T_air"]), hot_max)
+    max_allowed_delta = upper_bound - lower_bound
+
+    clean["scenario_T_air_K"] = float(scenario["T_air"])
+    clean["scenario_T_hot_min_K"] = hot_min
+    clean["scenario_T_hot_max_K"] = hot_max
+    clean["max_allowed_delta_T_K"] = max_allowed_delta
+    clean["delta_excess_K"] = clean["fdm_delta_T"] - max_allowed_delta
+    clean["passes_delta_bound"] = clean["delta_excess_K"] <= tolerance
+
+    if "T_hot_electrode_avg" in clean.columns:
+        hot_electrode = pd.to_numeric(clean["T_hot_electrode_avg"], errors="coerce")
+        cold_electrode = pd.to_numeric(clean["T_cold_electrode_avg"], errors="coerce")
+        clean["hot_electrode_above_bound_K"] = hot_electrode - upper_bound
+        clean["cold_electrode_below_bound_K"] = lower_bound - cold_electrode
+        clean["passes_electrode_bounds"] = (
+            (clean["hot_electrode_above_bound_K"] <= tolerance)
+            & (clean["cold_electrode_below_bound_K"] <= tolerance)
+        )
+    else:
+        clean["hot_electrode_above_bound_K"] = np.nan
+        clean["cold_electrode_below_bound_K"] = np.nan
+        clean["passes_electrode_bounds"] = False
+
+    clean["passes_sanity_check"] = clean["passes_delta_bound"] & clean["passes_electrode_bounds"]
+    return clean
+
+
 def _write_scenario_table(scenarios, output_dir):
     rows = []
     for scenario in scenarios:
@@ -485,11 +521,121 @@ def _write_scenario_table(scenarios, output_dir):
     return path
 
 
+def _load_global_metadata(args):
+    metadata_csv = args.metadata_csv or os.path.join(project_root, "data", "simulations", "metadata.csv")
+    if not os.path.exists(metadata_csv):
+        return None
+    cols = [
+        "simulation_id",
+        "T_hot_electrode_avg",
+        "T_cold_electrode_avg",
+        "delta_T_parallel",
+        "field_file",
+    ]
+    metadata = pd.read_csv(metadata_csv, low_memory=False)
+    available_cols = [col for col in cols if col in metadata.columns]
+    return metadata[available_cols].drop_duplicates(subset=["simulation_id"], keep="last")
+
+
+def sanity_check_existing(args):
+    output_dir = args.output_dir
+    if output_dir is None:
+        raise ValueError("--output-dir is required when using --sanity-only")
+
+    definitions_path = os.path.join(output_dir, "scenario_definitions.csv")
+    if not os.path.exists(definitions_path):
+        raise FileNotFoundError(f"Scenario definition CSV not found: {definitions_path}")
+
+    scenario_defs = pd.read_csv(definitions_path)
+    metadata = _load_global_metadata(args)
+    all_rows = []
+
+    for _, scenario in scenario_defs.iterrows():
+        scenario_key = scenario["scenario_key"]
+        verified_path = os.path.join(output_dir, scenario_key, "verified_candidates.csv")
+        if not os.path.exists(verified_path):
+            print(f"Skipping {scenario_key}; no verified_candidates.csv found")
+            continue
+
+        verified = pd.read_csv(verified_path)
+        if metadata is not None and "simulation_id" in verified.columns:
+            verified = verified.merge(metadata, on="simulation_id", how="left", suffixes=("", "_metadata"))
+            for col in ["T_hot_electrode_avg", "T_cold_electrode_avg", "field_file"]:
+                metadata_col = f"{col}_metadata"
+                if metadata_col in verified.columns:
+                    if col in verified.columns:
+                        verified[col] = verified[col].combine_first(verified[metadata_col])
+                    else:
+                        verified[col] = verified[metadata_col]
+
+        hot_min = float(scenario["T_hot_min_K"])
+        hot_max = float(scenario["T_hot_max_K"])
+        T_air = float(scenario["T_air_K"])
+        lower_bound = min(T_air, hot_min)
+        upper_bound = max(T_air, hot_max)
+        max_allowed_delta = upper_bound - lower_bound
+        checked = verified.dropna(subset=["fdm_delta_T"]).copy()
+        checked["scenario_key"] = scenario_key
+        checked["scenario_label"] = scenario["label"]
+        checked["scenario_T_air_K"] = T_air
+        checked["scenario_T_hot_min_K"] = hot_min
+        checked["scenario_T_hot_max_K"] = hot_max
+        checked["max_allowed_delta_T_K"] = max_allowed_delta
+        checked["delta_excess_K"] = checked["fdm_delta_T"] - max_allowed_delta
+        checked["passes_delta_bound"] = checked["delta_excess_K"] <= 1e-3
+
+        if "T_hot_electrode_avg" in checked.columns:
+            hot_electrode = pd.to_numeric(checked["T_hot_electrode_avg"], errors="coerce")
+            cold_electrode = pd.to_numeric(checked["T_cold_electrode_avg"], errors="coerce")
+            checked["hot_electrode_above_bound_K"] = hot_electrode - upper_bound
+            checked["cold_electrode_below_bound_K"] = lower_bound - cold_electrode
+            checked["passes_electrode_bounds"] = (
+                (checked["hot_electrode_above_bound_K"] <= 1e-3)
+                & (checked["cold_electrode_below_bound_K"] <= 1e-3)
+            )
+        else:
+            checked["hot_electrode_above_bound_K"] = np.nan
+            checked["cold_electrode_below_bound_K"] = np.nan
+            checked["passes_electrode_bounds"] = False
+
+        checked["passes_sanity_check"] = checked["passes_delta_bound"] & checked["passes_electrode_bounds"]
+        scenario_sanity_path = os.path.join(output_dir, scenario_key, "sanity_check.csv")
+        checked.to_csv(scenario_sanity_path, index=False)
+        all_rows.append(checked)
+        print(
+            f"{scenario_key}: {int(checked['passes_sanity_check'].sum())}/{len(checked)} "
+            f"passed sanity checks; wrote {scenario_sanity_path}"
+        )
+
+    if all_rows:
+        all_sanity = pd.concat(all_rows, ignore_index=True)
+        sanity_path = os.path.join(output_dir, "sanity_check_all.csv")
+        all_sanity.to_csv(sanity_path, index=False)
+        summary = (
+            all_sanity.groupby(["scenario_key", "scenario_label"], dropna=False)
+            .agg(
+                checked=("candidate_id", "count"),
+                passed=("passes_sanity_check", "sum"),
+                max_delta_excess_K=("delta_excess_K", "max"),
+                max_hot_electrode_above_bound_K=("hot_electrode_above_bound_K", "max"),
+                max_cold_electrode_below_bound_K=("cold_electrode_below_bound_K", "max"),
+            )
+            .reset_index()
+        )
+        summary_path = os.path.join(output_dir, "sanity_summary.csv")
+        summary.to_csv(summary_path, index=False)
+        print(f"\nSaved sanity summary to {summary_path}")
+        print(summary.to_string(index=False))
+
+
 def run_benchmark(args):
     if args.verify_workers < 1:
         raise ValueError("--verify-workers must be >= 1")
     if args.save_every < 1:
         raise ValueError("--save-every must be >= 1")
+    if args.sanity_only:
+        sanity_check_existing(args)
+        return
 
     device = _device_from_arg(args.device)
     print(f"Using device: {device}")
@@ -546,6 +692,13 @@ def run_benchmark(args):
         if args.skip_verify:
             continue
         verified_df = _verify_scenario(args, scenario_dir)
+        sanity_df = _sanity_check_verified(scenario, verified_df)
+        if not sanity_df.empty:
+            sanity_path = os.path.join(scenario_dir, "sanity_check.csv")
+            sanity_df.to_csv(sanity_path, index=False)
+            failed = int((~sanity_df["passes_sanity_check"]).sum())
+            if failed:
+                print(f"WARNING: {failed} candidates failed sanity checks. See {sanity_path}")
         summary = _summarize_verified(scenario, verified_df)
         summary_rows.append(summary)
         print(json.dumps(summary, indent=2))
@@ -580,6 +733,7 @@ def build_parser():
     parser.add_argument("--ny", type=int, default=50)
     parser.add_argument("--nz", type=int, default=20)
     parser.add_argument("--skip-verify", action="store_true", help="Only run surrogate screening.")
+    parser.add_argument("--sanity-only", action="store_true", help="Only sanity-check an existing benchmark output directory.")
     return parser
 
 

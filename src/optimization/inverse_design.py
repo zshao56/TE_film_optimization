@@ -454,6 +454,9 @@ VERIFY_COLUMNS = [
     "fdm_delta_T",
     "residual",
     "geometry_type",
+    "T_hot_electrode_avg",
+    "T_cold_electrode_avg",
+    "field_file",
     "geometry_parameters",
 ]
 
@@ -489,6 +492,9 @@ def _run_verification_task(row_dict, mask, hot_boundary):
         "fdm_delta_T": actual,
         "residual": None if actual is None else predicted - actual,
         "geometry_type": row_dict["geometry_type"],
+        "T_hot_electrode_avg": metadata.get("T_hot_electrode_avg"),
+        "T_cold_electrode_avg": metadata.get("T_cold_electrode_avg"),
+        "field_file": metadata.get("field_file"),
         "geometry_parameters": row_dict["geometry_parameters"],
     }
 
