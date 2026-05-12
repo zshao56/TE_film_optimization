@@ -14,6 +14,12 @@ def _bicgstab_with_compat(A, b, M, rtol=1e-5, maxiter=3000):
         return spla.bicgstab(A, b, M=M, tol=rtol, maxiter=maxiter)
 
 
+def _max_principle_violation(T_vec, lower_bound, upper_bound, tolerance=1e-3):
+    min_violation = lower_bound - float(np.min(T_vec))
+    max_violation = float(np.max(T_vec)) - upper_bound
+    return max(min_violation, max_violation) > tolerance, min_violation, max_violation
+
+
 class Custom3DFDMSolver:
     """
     A custom 3D Finite Difference Method (FDM) solver for steady-state heat conduction.
@@ -228,11 +234,41 @@ class Custom3DFDMSolver:
             T_vec = spsolve(A, b)
             
         # print(f"System solved in {time.time() - t0:.2f} s.")
+
+        lower_bound = min(float(self.T_air), float(np.min(hot_boundary_temperature)))
+        upper_bound = max(float(self.T_air), float(np.max(hot_boundary_temperature)))
+        violates, min_violation, max_violation = _max_principle_violation(T_vec, lower_bound, upper_bound)
+        if violates:
+            print(
+                "Warning: iterative FDM solution violates thermal bounds "
+                f"[{lower_bound:.6g}, {upper_bound:.6g}] K "
+                f"(below by {min_violation:.6g} K, above by {max_violation:.6g} K). "
+                "Falling back to direct solver."
+            )
+            T_vec = spsolve(A, b)
+            violates, min_violation, max_violation = _max_principle_violation(T_vec, lower_bound, upper_bound)
+            if violates:
+                print(
+                    "Warning: direct FDM solution still violates thermal bounds "
+                    f"[{lower_bound:.6g}, {upper_bound:.6g}] K "
+                    f"(below by {min_violation:.6g} K, above by {max_violation:.6g} K)."
+                )
         
         T_field = T_vec.reshape((nx, ny, nz))
         
         # Compute exact top surface temperature for metric calculation
         T_surface = T_field[:, :, -1] - U_eff_top * (T_field[:, :, -1] - self.T_air) * (dz / 2.0) / (k_top + 1e-15)
+        violates_surface, surface_min_violation, surface_max_violation = _max_principle_violation(
+            T_surface,
+            lower_bound,
+            upper_bound,
+        )
+        if violates_surface:
+            print(
+                "Warning: computed top surface temperature violates thermal bounds "
+                f"[{lower_bound:.6g}, {upper_bound:.6g}] K "
+                f"(below by {surface_min_violation:.6g} K, above by {surface_max_violation:.6g} K)."
+            )
         
         x_coords = np.linspace(dx/2, Lx - dx/2, nx)
         y_coords = np.linspace(dy/2, Ly - dy/2, ny)
