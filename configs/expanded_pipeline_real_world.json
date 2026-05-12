@@ -8,14 +8,17 @@
   },
   "environment": {
     "cuda_visible_devices": "auto",
-    "auto_cuda_devices": [0, 1],
+    "auto_cuda_devices": [
+      0,
+      1
+    ],
     "omp_num_threads": "1",
     "mkl_num_threads": "1",
     "openblas_num_threads": "1"
   },
   "data_generation": {
     "samples": 100000,
-    "cores": 8,
+    "cores": 12,
     "mode": "mixed",
     "structured_ratio": 0.8,
     "seed": 42,
@@ -32,15 +35,49 @@
     },
     "sampling": {
       "environment": {
-        "T_air_range": [293.15, 353.15]
+        "T_air_range": [
+          293.15,
+          353.15
+        ]
       },
       "convection": {
-        "side_scale_range": [0.6, 1.2],
+        "side_scale_range": [
+          0.6,
+          1.2
+        ],
         "regimes": {
-          "natural": {"range": [2.0, 15.0], "weight": 0.35, "code": 0},
-          "weak_forced": {"range": [15.0, 50.0], "weight": 0.25, "code": 1},
-          "forced": {"range": [50.0, 150.0], "weight": 0.25, "code": 2},
-          "strong_forced": {"range": [150.0, 500.0], "weight": 0.15, "code": 3}
+          "natural": {
+            "range": [
+              2.0,
+              15.0
+            ],
+            "weight": 0.35,
+            "code": 0
+          },
+          "weak_forced": {
+            "range": [
+              15.0,
+              50.0
+            ],
+            "weight": 0.25,
+            "code": 1
+          },
+          "forced": {
+            "range": [
+              50.0,
+              150.0
+            ],
+            "weight": 0.25,
+            "code": 2
+          },
+          "strong_forced": {
+            "range": [
+              150.0,
+              500.0
+            ],
+            "weight": 0.15,
+            "code": 3
+          }
         }
       },
       "hot_boundary": {
@@ -49,23 +86,71 @@
           "linear_gradient": 0.3,
           "gaussian_hotspot": 0.3
         },
-        "hot_min_delta_T_range": [5.0, 200.0],
-        "linear_amplitude_range": [5.0, 30.0],
-        "linear_directions": ["x", "y"],
-        "gaussian_peak_delta_range": [10.0, 40.0],
-        "hotspot_x_range": [0.15, 0.85],
-        "hotspot_y_range": [0.15, 0.85],
-        "hotspot_sigma_range": [0.06, 0.22]
+        "hot_min_delta_T_range": [
+          5.0,
+          200.0
+        ],
+        "linear_amplitude_range": [
+          5.0,
+          30.0
+        ],
+        "linear_directions": [
+          "x",
+          "y"
+        ],
+        "gaussian_peak_delta_range": [
+          10.0,
+          40.0
+        ],
+        "hotspot_x_range": [
+          0.15,
+          0.85
+        ],
+        "hotspot_y_range": [
+          0.15,
+          0.85
+        ],
+        "hotspot_sigma_range": [
+          0.06,
+          0.22
+        ]
       },
       "thickness_bands": {
-        "thin": {"range": [0.0001, 0.0005], "weight": 0.2},
-        "medium": {"range": [0.0005, 0.002], "weight": 0.6},
-        "thick": {"range": [0.002, 0.005], "weight": 0.2}
+        "thin": {
+          "range": [
+            0.0001,
+            0.0005
+          ],
+          "weight": 0.2
+        },
+        "medium": {
+          "range": [
+            0.0005,
+            0.002
+          ],
+          "weight": 0.6
+        },
+        "thick": {
+          "range": [
+            0.002,
+            0.005
+          ],
+          "weight": 0.2
+        }
       },
       "materials": {
-        "k_low_range": [0.05, 0.8],
-        "k_ratio_log_range": [3.0, 80.0],
-        "k_high_clip": [0.8, 10.0],
+        "k_low_range": [
+          0.05,
+          0.8
+        ],
+        "k_ratio_log_range": [
+          3.0,
+          80.0
+        ],
+        "k_high_clip": [
+          0.8,
+          10.0
+        ],
         "min_k_gap": 0.75
       },
       "curvature": {
@@ -77,8 +162,14 @@
           "1": 0.15,
           "random": 0.1
         },
-        "random_level_range": [0.0, 1.0],
-        "bend_axes": ["x", "y"]
+        "random_level_range": [
+          0.0,
+          1.0
+        ],
+        "bend_axes": [
+          "x",
+          "y"
+        ]
       }
     }
   },
@@ -117,7 +208,10 @@
     "model_path": "results/models/best_thermonet.pth",
     "metadata_csv": "data/simulations/metadata_clean.csv",
     "root_dir": "data/simulations",
-    "splits": ["val", "test"],
+    "splits": [
+      "val",
+      "test"
+    ],
     "seed": 42,
     "batch_size": 512,
     "workers": 8,
@@ -151,7 +245,12 @@
         "h_c_side": 180.0,
         "curvature_level": 1.0,
         "bend_axis": "x",
-        "hot_boundary": {"kind": "center_hotspot", "center_temp": 390.0, "edge_temp": 360.0, "sigma": 0.24}
+        "hot_boundary": {
+          "kind": "center_hotspot",
+          "center_temp": 390.0,
+          "edge_temp": 360.0,
+          "sigma": 0.24
+        }
       },
       {
         "key": "skin_slight_curve_uniform",
@@ -162,7 +261,10 @@
         "h_c_side": 8.0,
         "curvature_level": 0.1,
         "bend_axis": "x",
-        "hot_boundary": {"kind": "uniform", "temperature": 310.15}
+        "hot_boundary": {
+          "kind": "uniform",
+          "temperature": 310.15
+        }
       },
       {
         "key": "glass_center_hot_natural",
@@ -173,7 +275,12 @@
         "h_c_side": 8.0,
         "curvature_level": 0.0,
         "bend_axis": "x",
-        "hot_boundary": {"kind": "center_hotspot", "center_temp": 343.15, "edge_temp": 323.15, "sigma": 0.25}
+        "hot_boundary": {
+          "kind": "center_hotspot",
+          "center_temp": 343.15,
+          "edge_temp": 323.15,
+          "sigma": 0.25
+        }
       },
       {
         "key": "engine_forced_flat",
@@ -184,7 +291,12 @@
         "h_c_side": 300.0,
         "curvature_level": 0.0,
         "bend_axis": "x",
-        "hot_boundary": {"kind": "center_hotspot", "center_temp": 520.0, "edge_temp": 420.0, "sigma": 0.22}
+        "hot_boundary": {
+          "kind": "center_hotspot",
+          "center_temp": 520.0,
+          "edge_temp": 420.0,
+          "sigma": 0.22
+        }
       },
       {
         "key": "phone_linear_natural",
@@ -195,7 +307,12 @@
         "h_c_side": 8.0,
         "curvature_level": 0.0,
         "bend_axis": "x",
-        "hot_boundary": {"kind": "linear_gradient", "hot_temp": 333.15, "cold_temp": 303.15, "direction": "x"}
+        "hot_boundary": {
+          "kind": "linear_gradient",
+          "hot_temp": 333.15,
+          "cold_temp": 303.15,
+          "direction": "x"
+        }
       }
     ]
   }
