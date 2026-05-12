@@ -110,9 +110,10 @@ class TEFilmDataset(Dataset):
         scalars_norm = (scalars - self.scalar_mean) / self.scalar_std
         
         # 2. Load 3D Voxel Mask
-        h5_rel_path = row['field_file']
-        # If absolute path is saved in CSV, we might need to extract the filename
-        h5_filename = os.path.basename(h5_rel_path)
+        h5_rel_path = str(row['field_file'])
+        # Metadata may be generated on Windows and trained on Linux; normalize both
+        # separator styles before taking the filename.
+        h5_filename = os.path.basename(h5_rel_path.replace('\\', '/'))
         h5_path = os.path.join(self.root_dir, 'fields', h5_filename)
         
         with h5py.File(h5_path, 'r') as f:
