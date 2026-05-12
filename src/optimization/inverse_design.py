@@ -7,6 +7,7 @@ import re
 import sys
 import tempfile
 import uuid
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 
 import numpy as np
@@ -469,6 +470,39 @@ def _load_existing_verifications(out_path):
     return existing_df, verified_ids
 
 
+def _run_verification_task(row_dict, mask, hot_boundary):
+    candidate_id = row_dict["candidate_id"]
+    geom = json.loads(row_dict["geometry_parameters"])
+    geom["mask_3d"] = mask
+    if hot_boundary is not None:
+        geom["T_hot_map"] = hot_boundary
+
+    sim_id = f"inverse_{candidate_id}_{uuid.uuid4().hex[:8]}"
+    metadata = run_simulation_pipeline(geom, sim_id)
+    actual = metadata.get("delta_T_parallel")
+    predicted = float(row_dict["predicted_delta_T"])
+    return {
+        "candidate_id": candidate_id,
+        "simulation_id": sim_id,
+        "surrogate_rank": int(row_dict["surrogate_rank"]),
+        "predicted_delta_T": predicted,
+        "fdm_delta_T": actual,
+        "residual": None if actual is None else predicted - actual,
+        "geometry_type": row_dict["geometry_type"],
+        "geometry_parameters": row_dict["geometry_parameters"],
+    }
+
+
+def _save_verification_rows(existing_df, new_rows, out_path):
+    new_df = pd.DataFrame(new_rows, columns=VERIFY_COLUMNS)
+    combined_df = pd.concat([existing_df, new_df], ignore_index=True)
+    combined_df = combined_df.drop_duplicates(subset=["candidate_id"], keep="first")
+    if "surrogate_rank" in combined_df.columns:
+        combined_df = combined_df.sort_values("surrogate_rank", kind="stable")
+    combined_df.to_csv(out_path, index=False)
+    return combined_df
+
+
 def verify_candidates(args):
     top_path = os.path.join(args.screen_dir, "top_candidates.csv")
     if not os.path.exists(top_path):
@@ -477,6 +511,10 @@ def verify_candidates(args):
         raise ValueError("--start-rank must be >= 1")
     if args.verify_count < 1:
         raise ValueError("--verify-count must be >= 1")
+    if args.workers < 1:
+        raise ValueError("--workers must be >= 1")
+    if args.save_every < 1:
+        raise ValueError("--save-every must be >= 1")
 
     top_df = pd.read_csv(top_path)
     mask_map = _load_top_masks(args.screen_dir)
@@ -501,42 +539,47 @@ def verify_candidates(args):
         print(f"No new candidates to verify. Existing results are in {out_path}")
         return
 
-    rows = []
+    tasks = []
 
     for _, row in verify_df.iterrows():
-        candidate_id = row["candidate_id"]
+        row_dict = row.to_dict()
+        candidate_id = row_dict["candidate_id"]
         if candidate_id not in mask_map:
             raise KeyError(f"Missing mask for candidate {candidate_id}")
 
-        geom = json.loads(row["geometry_parameters"])
-        geom["mask_3d"] = mask_map[candidate_id]
-        if candidate_id in hot_boundary_map:
-            geom["T_hot_map"] = hot_boundary_map[candidate_id]
-        sim_id = f"inverse_{candidate_id}_{uuid.uuid4().hex[:8]}"
-        metadata = run_simulation_pipeline(geom, sim_id)
-        actual = metadata.get("delta_T_parallel")
-        predicted = float(row["predicted_delta_T"])
-        rows.append(
-            {
-                "candidate_id": candidate_id,
-                "simulation_id": sim_id,
-                "surrogate_rank": int(row["surrogate_rank"]),
-                "predicted_delta_T": predicted,
-                "fdm_delta_T": actual,
-                "residual": None if actual is None else predicted - actual,
-                "geometry_type": row["geometry_type"],
-                "geometry_parameters": row["geometry_parameters"],
-            }
+        tasks.append(
+            (
+                row_dict,
+                mask_map[candidate_id],
+                hot_boundary_map.get(candidate_id),
+            )
         )
 
-    new_df = pd.DataFrame(rows, columns=VERIFY_COLUMNS)
-    combined_df = pd.concat([existing_df, new_df], ignore_index=True)
-    combined_df = combined_df.drop_duplicates(subset=["candidate_id"], keep="first")
-    if "surrogate_rank" in combined_df.columns:
-        combined_df = combined_df.sort_values("surrogate_rank", kind="stable")
-    combined_df.to_csv(out_path, index=False)
+    rows = []
+    total_tasks = len(tasks)
+    print(f"Verifying {total_tasks} candidates with {args.workers} worker(s)...")
+
+    if args.workers <= 1:
+        for task_idx, (row_dict, mask, hot_boundary) in enumerate(tasks, start=1):
+            rows.append(_run_verification_task(row_dict, mask, hot_boundary))
+            if task_idx % args.save_every == 0 or task_idx == total_tasks:
+                combined_df = _save_verification_rows(existing_df, rows, out_path)
+                print(f"Verified {task_idx}/{total_tasks}; saved {len(combined_df)} total rows to {out_path}")
+    else:
+        with ProcessPoolExecutor(max_workers=args.workers) as executor:
+            futures = [
+                executor.submit(_run_verification_task, row_dict, mask, hot_boundary)
+                for row_dict, mask, hot_boundary in tasks
+            ]
+            for completed, future in enumerate(as_completed(futures), start=1):
+                rows.append(future.result())
+                if completed % args.save_every == 0 or completed == total_tasks:
+                    combined_df = _save_verification_rows(existing_df, rows, out_path)
+                    print(f"Verified {completed}/{total_tasks}; saved {len(combined_df)} total rows to {out_path}")
+
+    combined_df = _save_verification_rows(existing_df, rows, out_path)
     print(f"\nSaved verified candidate results to {out_path}")
-    print(f"Verified {len(new_df)} new candidates; total rows in CSV: {len(combined_df)}")
+    print(f"Verified {len(rows)} new candidates; total rows in CSV: {len(combined_df)}")
 
 
 def _safe_filename(value):
@@ -684,6 +727,8 @@ def build_parser():
     verify.add_argument("--verify-count", type=int, default=50)
     verify.add_argument("--start-rank", type=int, default=1, help="First surrogate rank to verify, using 1-based ranks.")
     verify.add_argument("--output-csv", type=str, default=None)
+    verify.add_argument("--workers", type=int, default=1, help="Number of parallel FDM verification worker processes.")
+    verify.add_argument("--save-every", type=int, default=10, help="Save partial verification results every N completed candidates.")
     verify.set_defaults(func=verify_candidates)
 
     plot_top = subparsers.add_parser("plot-top", help="Plot the top FDM-verified structures from a screen directory.")
