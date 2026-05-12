@@ -194,6 +194,48 @@ python src/optimization/inverse_design.py plot-top --screen-dir results/inverse_
 
 `screen` 阶段只做神经网络预测；`verify` 阶段才会运行 FDM，并把真实仿真结果写入数据库和 `verified_candidates.csv`。最终排序应看 `verified_candidates.csv` 里的真实 `fdm_delta_T`，不要看 surrogate rank。
 
+## 🌍 现实场景公平 Benchmark
+
+为了比较不同现实应用场景下的可达性能，可以使用现实场景 benchmark 脚本，而不是完全自由的 unconstrained inverse design。该脚本会固定每个场景的热端二维温度图、曲率、环境温度和对流强度，同时仍允许 surrogate 在薄膜厚度、材料热导率对比和几何结构之间搜索。每个场景的 top 候选随后都会用 FDM 复算。
+
+当前内置五个场景：
+
+| 场景 | 热端边界条件 | 曲率 | 对流 |
+| :--- | :--- | :--- | :--- |
+| 电池表面散热 | 中心热点 390 K，边缘 360 K | 半圆柱 (`curvature_level=1.0`) | 较强空调/强制对流 (`h_c=180`) |
+| 皮肤贴片 | 均匀 310.15 K (37 C) | 轻微曲率 (`curvature_level=0.10`) | 自然对流 (`h_c=8`) |
+| 玻璃面板 | 中心热点 343.15 K (70 C)，边缘 323.15 K (50 C) | 平面 | 自然对流 (`h_c=8`) |
+| 汽车发动机表面 | 中心热点 520 K，边缘 420 K | 平面 | 行驶强制对流 (`h_c=300`) |
+| 手机表面 | 从 303.15 K 到 333.15 K 的线性温度梯度 | 平面 | 自然对流 (`h_c=8`) |
+
+一条命令跑完五个场景：
+
+```bash
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+CUDA_VISIBLE_DEVICES=1 python -u src/optimization/real_world_benchmark.py \
+  --model-path results/models/best_thermonet.pth \
+  --num-candidates 50000 \
+  --top-k 500 \
+  --verify-count 50 \
+  --batch-size 512 \
+  --verify-workers 8 \
+  --output-dir results/real_world_benchmarks/expanded_v1_real_world \
+  2>&1 | tee logs/07_real_world_benchmark.log
+```
+
+输出目录会包含总表和每个场景的独立结果：
+
+```text
+scenario_definitions.csv
+benchmark_summary.csv
+<scenario_key>/screened_candidates.csv
+<scenario_key>/top_candidates.csv
+<scenario_key>/verified_candidates.csv
+<scenario_key>/top_candidate_masks.npz
+```
+
+注意：电池和发动机场景的温度有意高于 expanded 训练库原始热端范围（约 303-373 K）。最终 `fdm_delta_T` 是真实 FDM 复算结果，但 surrogate 筛选阶段属于外推。如果要做论文级结论，建议后续补充这些高温场景的数据并重新训练 surrogate。
+
 ## 📐 网格无关性与网格选择 (Grid Independence)
 
 针对海量数据库生成（例如 50,000 个样本），选择极具性价比的网格分辨率至关重要。我们在对网格精度高度敏感的 `curved_wedge`（曲线楔形）结构上进行了**网格无关性测试**，以评估物理精度与计算时间成本：

@@ -194,6 +194,48 @@ python src/optimization/inverse_design.py plot-top --screen-dir results/inverse_
 
 The `screen` command only runs neural-network inference. The `verify` command runs FDM, appends verified simulations to the database, and writes `verified_candidates.csv`. The final candidate ranking should use the FDM values in `verified_candidates.csv`, not the surrogate rank.
 
+## 🌍 Real-World Scenario Benchmark
+
+For fairer application-oriented comparisons, use the real-world benchmark runner instead of unconstrained inverse design. The script fixes each operating scenario's hot-boundary map, curvature, ambient temperature, and convection strength, while still letting the surrogate search over film thickness, material contrast, and geometry. Each scenario is then verified with the FDM solver.
+
+The current benchmark scenarios are:
+
+| Scenario | Hot-boundary condition | Curvature | Convection |
+| :--- | :--- | :--- | :--- |
+| Battery surface cooling | Center hotspot 390 K, edge 360 K | Half-cylinder (`curvature_level=1.0`) | Strong forced/AC cooling (`h_c=180`) |
+| Skin patch | Uniform 310.15 K (37 C) | Slight curvature (`curvature_level=0.10`) | Natural convection (`h_c=8`) |
+| Glass panel | Center hotspot 343.15 K (70 C), edge 323.15 K (50 C) | Flat | Natural convection (`h_c=8`) |
+| Automotive engine surface | Center hotspot 520 K, edge 420 K | Flat | Strong forced driving airflow (`h_c=300`) |
+| Phone surface | Linear gradient from 303.15 K to 333.15 K | Flat | Natural convection (`h_c=8`) |
+
+Run all five scenarios with one command:
+
+```bash
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+CUDA_VISIBLE_DEVICES=1 python -u src/optimization/real_world_benchmark.py \
+  --model-path results/models/best_thermonet.pth \
+  --num-candidates 50000 \
+  --top-k 500 \
+  --verify-count 50 \
+  --batch-size 512 \
+  --verify-workers 8 \
+  --output-dir results/real_world_benchmarks/expanded_v1_real_world \
+  2>&1 | tee logs/07_real_world_benchmark.log
+```
+
+The output directory contains one subfolder per scenario, plus:
+
+```text
+scenario_definitions.csv
+benchmark_summary.csv
+<scenario_key>/screened_candidates.csv
+<scenario_key>/top_candidates.csv
+<scenario_key>/verified_candidates.csv
+<scenario_key>/top_candidate_masks.npz
+```
+
+Note: the battery and engine scenarios intentionally go above the expanded training hot-boundary range (roughly 303-373 K). Their final `fdm_delta_T` values are still valid FDM computations, but the surrogate screening step is extrapolating. For publication-grade conclusions in those high-temperature regimes, generate additional high-temperature training data and retrain the surrogate.
+
 ## 📐 Grid Independence and Mesh Selection
 
 For the massive database generation (e.g., 50,000 samples), selecting the right mesh resolution is crucial. A **Grid Independence Test** was performed on the highly sensitive `curved_wedge` structure to evaluate accuracy versus computational cost:
