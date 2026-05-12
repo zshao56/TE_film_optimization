@@ -349,6 +349,7 @@ def screen_candidates(args):
         root_dir=root_dir,
         include_boundary_channel=include_boundary_channel,
         scalar_cols=scalar_cols,
+        check_field_files=False,
     )
     scalar_mean = dataset.scalar_mean.astype(np.float32)
     scalar_std = dataset.scalar_std.astype(np.float32)

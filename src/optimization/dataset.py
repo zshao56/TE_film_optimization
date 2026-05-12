@@ -22,6 +22,7 @@ class TEFilmDataset(Dataset):
         top_weight=1.0,
         include_boundary_channel=False,
         scalar_cols=None,
+        check_field_files=True,
     ):
         """
         Args:
@@ -35,6 +36,7 @@ class TEFilmDataset(Dataset):
         self.return_weight = return_weight
         self.include_boundary_channel = include_boundary_channel
         self.input_channels = 2 if include_boundary_channel else 1
+        self.check_field_files = check_field_files
         # Only keep successful simulations that have a delta_T_parallel
         df = pd.read_csv(metadata_csv, low_memory=False)
         
@@ -67,18 +69,19 @@ class TEFilmDataset(Dataset):
         df = df.dropna(subset=self.scalar_cols + [self.target_col, 'qc_pass'])
         
         self.data_frame = df[df['qc_pass'] == True].reset_index(drop=True)
-        field_exists = self.data_frame['field_file'].map(lambda value: os.path.exists(self._field_path(value)))
-        missing_count = int((~field_exists).sum())
-        if missing_count:
-            missing_examples = [
-                self._field_filename(value)
-                for value in self.data_frame.loc[~field_exists, 'field_file'].head(5)
-            ]
-            print(
-                f"Warning: dropping {missing_count} rows with missing HDF5 field files. "
-                f"Examples: {missing_examples}"
-            )
-            self.data_frame = self.data_frame[field_exists].reset_index(drop=True)
+        if self.check_field_files:
+            field_exists = self.data_frame['field_file'].map(lambda value: os.path.exists(self._field_path(value)))
+            missing_count = int((~field_exists).sum())
+            if missing_count:
+                missing_examples = [
+                    self._field_filename(value)
+                    for value in self.data_frame.loc[~field_exists, 'field_file'].head(5)
+                ]
+                print(
+                    f"Warning: dropping {missing_count} rows with missing HDF5 field files. "
+                    f"Examples: {missing_examples}"
+                )
+                self.data_frame = self.data_frame[field_exists].reset_index(drop=True)
         
         # Calculate statistics for normalization (Z-score)
         self.scalar_mean = self.data_frame[self.scalar_cols].mean().values
