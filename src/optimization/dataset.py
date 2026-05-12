@@ -67,6 +67,18 @@ class TEFilmDataset(Dataset):
         df = df.dropna(subset=self.scalar_cols + [self.target_col, 'qc_pass'])
         
         self.data_frame = df[df['qc_pass'] == True].reset_index(drop=True)
+        field_exists = self.data_frame['field_file'].map(lambda value: os.path.exists(self._field_path(value)))
+        missing_count = int((~field_exists).sum())
+        if missing_count:
+            missing_examples = [
+                self._field_filename(value)
+                for value in self.data_frame.loc[~field_exists, 'field_file'].head(5)
+            ]
+            print(
+                f"Warning: dropping {missing_count} rows with missing HDF5 field files. "
+                f"Examples: {missing_examples}"
+            )
+            self.data_frame = self.data_frame[field_exists].reset_index(drop=True)
         
         # Calculate statistics for normalization (Z-score)
         self.scalar_mean = self.data_frame[self.scalar_cols].mean().values
@@ -98,6 +110,14 @@ class TEFilmDataset(Dataset):
     def __len__(self):
         return len(self.data_frame)
 
+    def _field_filename(self, field_file):
+        # Metadata may be generated on Windows and trained on Linux; normalize both
+        # separator styles before taking the filename.
+        return os.path.basename(str(field_file).replace('\\', '/'))
+
+    def _field_path(self, field_file):
+        return os.path.join(self.root_dir, 'fields', self._field_filename(field_file))
+
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
@@ -110,11 +130,7 @@ class TEFilmDataset(Dataset):
         scalars_norm = (scalars - self.scalar_mean) / self.scalar_std
         
         # 2. Load 3D Voxel Mask
-        h5_rel_path = str(row['field_file'])
-        # Metadata may be generated on Windows and trained on Linux; normalize both
-        # separator styles before taking the filename.
-        h5_filename = os.path.basename(h5_rel_path.replace('\\', '/'))
-        h5_path = os.path.join(self.root_dir, 'fields', h5_filename)
+        h5_path = self._field_path(row['field_file'])
         
         with h5py.File(h5_path, 'r') as f:
             k_map = f['fields/kappa'][:]  # Correct key is 'kappa', not 'thermal_conductivity'
