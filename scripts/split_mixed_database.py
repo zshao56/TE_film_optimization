@@ -1,6 +1,7 @@
 import argparse
 import csv
 import os
+import re
 import shutil
 import sys
 from collections import Counter
@@ -19,6 +20,20 @@ def _is_record_start(value):
     return value.startswith(("sim_", "inverse_"))
 
 
+def _split_embedded_record_starts(row):
+    repaired = []
+    for value in row:
+        value = str(value)
+        match = re.search(r"(\.h5)(sim_|inverse_)", value)
+        if match:
+            split_at = match.start(2)
+            repaired.append(value[:split_at])
+            repaired.append(value[split_at:])
+        else:
+            repaired.append(value)
+    return repaired
+
+
 def _row_to_records(row, header, line_number):
     if len(row) == len(REQUIRED_COLUMNS):
         chunks = [row]
@@ -34,14 +49,26 @@ def _row_to_records(row, header, line_number):
         fieldnames = REQUIRED_COLUMNS
     else:
         starts = [idx for idx, value in enumerate(row) if _is_record_start(value)]
+        if len(starts) <= 1:
+            repaired_row = _split_embedded_record_starts(row)
+            repaired_starts = [idx for idx, value in enumerate(repaired_row) if _is_record_start(value)]
+            if len(repaired_starts) > len(starts):
+                print(
+                    f"Warning: line {line_number} contains a simulation_id glued to an .h5 path; "
+                    "repaired the field boundary."
+                )
+                row = repaired_row
+                starts = repaired_starts
+
         if starts and starts[0] != 0:
             starts.insert(0, 0)
         if len(starts) <= 1:
-            raise ValueError(
-                f"Line {line_number} has {len(row)} fields, which is longer than "
-                f"the expanded schema ({len(REQUIRED_COLUMNS)}), and no embedded "
-                "simulation_id boundary was found."
+            print(
+                f"Warning: skipping unrecoverable line {line_number}; it has {len(row)} fields, "
+                f"which is longer than the expanded schema ({len(REQUIRED_COLUMNS)}), and no "
+                "embedded simulation_id boundary was found."
             )
+            return
 
         starts.append(len(row))
         chunks = []
