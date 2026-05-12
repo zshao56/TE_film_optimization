@@ -104,7 +104,7 @@ def _boundary_type_from_hot_config(hot_config):
     raise ValueError(f"Unsupported real-world hot boundary kind: {kind}")
 
 
-def _hot_boundary_metadata(hot_map, boundary_type, gradient_direction_code=0):
+def _hot_boundary_metadata(hot_map, boundary_type, gradient_direction_code=0, T_air=None):
     return {
         "T_hot": float(np.mean(hot_map)),
         "T_hot_map": hot_map.astype(float),
@@ -112,6 +112,7 @@ def _hot_boundary_metadata(hot_map, boundary_type, gradient_direction_code=0):
         "hot_boundary_type_code": HOT_BOUNDARY_TYPE_CODES[boundary_type],
         "T_hot_min": float(np.min(hot_map)),
         "T_hot_max": float(np.max(hot_map)),
+        "T_hot_min_delta": None if T_air is None else float(np.min(hot_map) - T_air),
         "T_hot_amplitude": float(np.max(hot_map) - np.min(hot_map)),
         "gradient_direction_code": gradient_direction_code,
         "hotspot_x": 0.5 if boundary_type == "gaussian_hotspot" else 0.0,
@@ -255,6 +256,7 @@ def _scenario_environment(scenario, nx, ny):
             hot_map,
             scenario["hot_boundary_type"],
             gradient_direction_code=int(scenario.get("gradient_direction_code", 0)),
+            T_air=env["T_air"],
         )
     )
     return env

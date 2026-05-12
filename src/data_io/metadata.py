@@ -26,7 +26,7 @@ REQUIRED_COLUMNS = [
     'database_profile', 'scenario_id', 'k_ratio',
     'convection_regime', 'convection_regime_code', 'h_c', 'h_c_side',
     'hot_boundary_type', 'hot_boundary_type_code', 'T_hot_min', 'T_hot_max',
-    'T_hot_amplitude', 'gradient_direction_code', 'hotspot_x', 'hotspot_y',
+    'T_hot_min_delta', 'T_hot_amplitude', 'gradient_direction_code', 'hotspot_x', 'hotspot_y',
     'hotspot_sigma',
     'curvature_type', 'curvature_level', 'arc_angle', 'bend_axis',
     'bend_axis_code', 'bend_radius', 'arc_length', 'projected_length',

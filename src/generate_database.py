@@ -103,7 +103,7 @@ def _sample_convection(rng, profile, sampling_config=None):
     }
 
 
-def _sample_hot_boundary(rng, profile, nx, ny, sampling_config=None):
+def _sample_hot_boundary(rng, profile, nx, ny, sampling_config=None, T_air=None):
     x = np.linspace(0.0, 1.0, nx)
     y = np.linspace(0.0, 1.0, ny)
     X, Y = np.meshgrid(x, y, indexing='ij')
@@ -119,6 +119,7 @@ def _sample_hot_boundary(rng, profile, nx, ny, sampling_config=None):
             'hot_boundary_type_code': HOT_BOUNDARY_TYPE_CODES['uniform'],
             'T_hot_min': T_hot,
             'T_hot_max': T_hot,
+            'T_hot_min_delta': None if T_air is None else float(T_hot - T_air),
             'T_hot_amplitude': 0.0,
             'gradient_direction_code': 0,
             'hotspot_x': 0.0,
@@ -132,35 +133,52 @@ def _sample_hot_boundary(rng, profile, nx, ny, sampling_config=None):
         {'uniform': 0.40, 'linear_gradient': 0.30, 'gaussian_hotspot': 0.30},
     )
     boundary_type = _weighted_choice(rng, type_weights)
+    use_relative_hot_min = T_air is not None and 'hot_min_delta_T_range' in hot_config
+    if use_relative_hot_min:
+        hot_min_delta = _sample_uniform_range(rng, hot_config.get('hot_min_delta_T_range', [5.0, 200.0]))
+        hot_min = float(T_air + hot_min_delta)
+    else:
+        hot_min_delta = None
+        hot_min = None
 
     if boundary_type == 'uniform':
-        T_hot = _sample_uniform_range(rng, hot_config.get('uniform_temp_range', [308.0, 373.0]))
+        T_hot = hot_min if use_relative_hot_min else _sample_uniform_range(rng, hot_config.get('uniform_temp_range', [308.0, 373.0]))
         hot_map = np.full((nx, ny), T_hot, dtype=float)
         gradient_direction_code = 0
         hotspot_x = hotspot_y = hotspot_sigma = 0.0
     elif boundary_type == 'linear_gradient':
-        mean_temp = _sample_uniform_range(rng, hot_config.get('linear_mean_range', [318.0, 363.0]))
         amplitude = _sample_uniform_range(rng, hot_config.get('linear_amplitude_range', [5.0, 30.0]))
         directions = hot_config.get('linear_directions', ['x', 'y'])
         direction = str(rng.choice(directions))
         coord = X if direction == 'x' else Y
-        hot_map = mean_temp + amplitude * (coord - 0.5)
-        hot_clip = hot_config.get('linear_clip_range', [308.0, 373.0])
-        hot_map = np.clip(hot_map, hot_clip[0], hot_clip[1])
+        if use_relative_hot_min:
+            hot_map = hot_min + amplitude * coord
+        else:
+            mean_temp = _sample_uniform_range(rng, hot_config.get('linear_mean_range', [318.0, 363.0]))
+            hot_map = mean_temp + amplitude * (coord - 0.5)
+            hot_clip = hot_config.get('linear_clip_range', [308.0, 373.0])
+            hot_map = np.clip(hot_map, hot_clip[0], hot_clip[1])
         gradient_direction_code = 0 if direction == 'x' else 1
         hotspot_x = hotspot_y = hotspot_sigma = 0.0
     elif boundary_type == 'gaussian_hotspot':
-        base_temp = _sample_uniform_range(rng, hot_config.get('gaussian_base_range', [303.0, 335.0]))
-        peak_min = max(base_temp + hot_config.get('gaussian_min_peak_delta', 10.0), hot_config.get('gaussian_peak_floor', 330.0))
-        peak_max = hot_config.get('gaussian_peak_max', 373.0)
-        peak_temp = float(rng.uniform(peak_min, peak_max))
         hotspot_x = _sample_uniform_range(rng, hot_config.get('hotspot_x_range', [0.15, 0.85]))
         hotspot_y = _sample_uniform_range(rng, hot_config.get('hotspot_y_range', [0.15, 0.85]))
         hotspot_sigma = _sample_uniform_range(rng, hot_config.get('hotspot_sigma_range', [0.06, 0.22]))
         r2 = (X - hotspot_x) ** 2 + (Y - hotspot_y) ** 2
-        hot_map = base_temp + (peak_temp - base_temp) * np.exp(-0.5 * r2 / (hotspot_sigma ** 2))
-        hot_clip = hot_config.get('gaussian_clip_range', [303.0, 373.0])
-        hot_map = np.clip(hot_map, hot_clip[0], hot_clip[1])
+        bump = np.exp(-0.5 * r2 / (hotspot_sigma ** 2))
+        if use_relative_hot_min:
+            bump_span = float(np.max(bump) - np.min(bump))
+            bump = np.zeros_like(bump) if bump_span <= 1e-15 else (bump - np.min(bump)) / bump_span
+            peak_delta = _sample_uniform_range(rng, hot_config.get('gaussian_peak_delta_range', [10.0, 40.0]))
+            hot_map = hot_min + peak_delta * bump
+        else:
+            base_temp = _sample_uniform_range(rng, hot_config.get('gaussian_base_range', [303.0, 335.0]))
+            peak_min = max(base_temp + hot_config.get('gaussian_min_peak_delta', 10.0), hot_config.get('gaussian_peak_floor', 330.0))
+            peak_max = hot_config.get('gaussian_peak_max', 373.0)
+            peak_temp = float(rng.uniform(peak_min, peak_max))
+            hot_map = base_temp + (peak_temp - base_temp) * bump
+            hot_clip = hot_config.get('gaussian_clip_range', [303.0, 373.0])
+            hot_map = np.clip(hot_map, hot_clip[0], hot_clip[1])
         gradient_direction_code = 0
     else:
         raise ValueError(f"Unsupported hot boundary type: {boundary_type}")
@@ -172,6 +190,7 @@ def _sample_hot_boundary(rng, profile, nx, ny, sampling_config=None):
         'hot_boundary_type_code': HOT_BOUNDARY_TYPE_CODES[boundary_type],
         'T_hot_min': float(np.min(hot_map)),
         'T_hot_max': float(np.max(hot_map)),
+        'T_hot_min_delta': float(np.min(hot_map) - T_air) if T_air is not None else hot_min_delta,
         'T_hot_amplitude': float(np.max(hot_map) - np.min(hot_map)),
         'gradient_direction_code': gradient_direction_code,
         'hotspot_x': hotspot_x,
@@ -185,7 +204,7 @@ def _sample_environment(rng, profile='legacy', nx=50, ny=50, sampling_config=Non
         'T_air': _sample_uniform_range(rng, _nested_get(sampling_config, ['environment', 'T_air_range'], [293.0, 303.0])),
     }
     env.update(_sample_convection(rng, profile, sampling_config))
-    env.update(_sample_hot_boundary(rng, profile, nx, ny, sampling_config))
+    env.update(_sample_hot_boundary(rng, profile, nx, ny, sampling_config, T_air=env['T_air']))
     return env
 
 

@@ -104,6 +104,7 @@ def _candidate_record(candidate_id, geom):
         "hot_boundary_type",
         "hot_boundary_type_code",
         "T_hot_min",
+        "T_hot_min_delta",
         "T_hot_max",
         "T_hot_amplitude",
         "gradient_direction_code",
@@ -139,6 +140,7 @@ def _convection_regime_for_h(h_c):
 def _apply_fixed_environment(env_params, args, nx, ny):
     if args.fixed_T_hot is not None:
         T_hot = float(args.fixed_T_hot)
+        T_air = float(args.fixed_T_air if args.fixed_T_air is not None else env_params.get("T_air", 298.15))
         env_params.update(
             {
                 "T_hot": T_hot,
@@ -147,6 +149,7 @@ def _apply_fixed_environment(env_params, args, nx, ny):
                 "hot_boundary_type_code": HOT_BOUNDARY_TYPE_CODES["uniform"],
                 "T_hot_min": T_hot,
                 "T_hot_max": T_hot,
+                "T_hot_min_delta": T_hot - T_air,
                 "T_hot_amplitude": 0.0,
                 "gradient_direction_code": 0,
                 "hotspot_x": 0.0,

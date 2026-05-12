@@ -98,6 +98,7 @@ def run_simulation_pipeline(geom_params, sim_id):
         'hot_boundary_type_code': geom_params.get('hot_boundary_type_code'),
         'T_hot_min': geom_params.get('T_hot_min'),
         'T_hot_max': geom_params.get('T_hot_max'),
+        'T_hot_min_delta': geom_params.get('T_hot_min_delta'),
         'T_hot_amplitude': geom_params.get('T_hot_amplitude'),
         'gradient_direction_code': geom_params.get('gradient_direction_code'),
         'hotspot_x': geom_params.get('hotspot_x'),

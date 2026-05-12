@@ -32,7 +32,7 @@
     },
     "sampling": {
       "environment": {
-        "T_air_range": [293.0, 303.0]
+        "T_air_range": [293.15, 353.15]
       },
       "convection": {
         "side_scale_range": [0.6, 1.2],
@@ -49,16 +49,10 @@
           "linear_gradient": 0.3,
           "gaussian_hotspot": 0.3
         },
-        "uniform_temp_range": [308.0, 373.0],
-        "linear_mean_range": [318.0, 363.0],
+        "hot_min_delta_T_range": [5.0, 200.0],
         "linear_amplitude_range": [5.0, 30.0],
         "linear_directions": ["x", "y"],
-        "linear_clip_range": [308.0, 373.0],
-        "gaussian_base_range": [303.0, 335.0],
-        "gaussian_min_peak_delta": 10.0,
-        "gaussian_peak_floor": 330.0,
-        "gaussian_peak_max": 373.0,
-        "gaussian_clip_range": [303.0, 373.0],
+        "gaussian_peak_delta_range": [10.0, 40.0],
         "hotspot_x_range": [0.15, 0.85],
         "hotspot_y_range": [0.15, 0.85],
         "hotspot_sigma_range": [0.06, 0.22]
