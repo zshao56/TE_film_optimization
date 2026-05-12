@@ -14,6 +14,59 @@ if SRC_DIR not in sys.path:
 from data_io.metadata import REQUIRED_COLUMNS
 
 
+def _is_record_start(value):
+    value = str(value or "")
+    return value.startswith(("sim_", "inverse_"))
+
+
+def _row_to_records(row, header, line_number):
+    if len(row) == len(REQUIRED_COLUMNS):
+        chunks = [row]
+        fieldnames = REQUIRED_COLUMNS
+    elif len(row) == len(header):
+        chunks = [row]
+        fieldnames = header
+    elif len(row) < len(header):
+        chunks = [row + [""] * (len(header) - len(row))]
+        fieldnames = header
+    elif len(row) < len(REQUIRED_COLUMNS):
+        chunks = [row + [""] * (len(REQUIRED_COLUMNS) - len(row))]
+        fieldnames = REQUIRED_COLUMNS
+    else:
+        starts = [idx for idx, value in enumerate(row) if _is_record_start(value)]
+        if starts and starts[0] != 0:
+            starts.insert(0, 0)
+        if len(starts) <= 1:
+            raise ValueError(
+                f"Line {line_number} has {len(row)} fields, which is longer than "
+                f"the expanded schema ({len(REQUIRED_COLUMNS)}), and no embedded "
+                "simulation_id boundary was found."
+            )
+
+        starts.append(len(row))
+        chunks = []
+        for start, end in zip(starts, starts[1:]):
+            chunk = row[start:end]
+            if not chunk or all(value == "" for value in chunk):
+                continue
+            if len(chunk) > len(REQUIRED_COLUMNS):
+                print(
+                    f"Warning: line {line_number} embedded chunk starting at field {start + 1} "
+                    f"has {len(chunk)} fields; truncating to {len(REQUIRED_COLUMNS)}."
+                )
+                chunk = chunk[:len(REQUIRED_COLUMNS)]
+            elif len(chunk) < len(REQUIRED_COLUMNS):
+                chunk = chunk + [""] * (len(REQUIRED_COLUMNS) - len(chunk))
+            chunks.append(chunk)
+        fieldnames = REQUIRED_COLUMNS
+        print(f"Warning: repaired line {line_number} by splitting it into {len(chunks)} records.")
+
+    for chunk in chunks:
+        record = dict(zip(fieldnames, chunk))
+        record["_source_line_number"] = line_number
+        yield record
+
+
 def _read_mixed_rows(metadata_path):
     with open(metadata_path, newline="", encoding="utf-8") as f:
         reader = csv.reader(f)
@@ -22,24 +75,7 @@ def _read_mixed_rows(metadata_path):
             if not row or all(value == "" for value in row):
                 continue
 
-            if len(row) == len(REQUIRED_COLUMNS):
-                record = dict(zip(REQUIRED_COLUMNS, row))
-            elif len(row) == len(header):
-                record = dict(zip(header, row))
-            elif len(row) < len(header):
-                padded = row + [""] * (len(header) - len(row))
-                record = dict(zip(header, padded))
-            elif len(row) < len(REQUIRED_COLUMNS):
-                padded = row + [""] * (len(REQUIRED_COLUMNS) - len(row))
-                record = dict(zip(REQUIRED_COLUMNS, padded))
-            else:
-                raise ValueError(
-                    f"Line {line_number} has {len(row)} fields, which is longer than "
-                    f"the expanded schema ({len(REQUIRED_COLUMNS)})."
-                )
-
-            record["_source_line_number"] = line_number
-            yield record
+            yield from _row_to_records(row, header, line_number)
 
 
 def _profile_for(record):
