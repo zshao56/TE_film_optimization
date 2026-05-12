@@ -87,38 +87,29 @@ def _select_cuda_device(config):
     return selected["index"]
 
 
-def _resolve_auto_cuda(config):
-    stage_configs = [
-        config.get("data_generation", {}),
-        config.get("metadata_filter", {}),
-        config.get("training", {}),
-        config.get("evaluation", {}),
-        config.get("real_world_benchmark", {}),
-    ]
-    if not any(_is_auto_cuda(_cuda_value(config, stage_config)) for stage_config in stage_configs):
-        return config
-
-    selected = _select_cuda_device(config)
-    resolved = dict(config)
-    environment = dict(resolved.get("environment", {}))
-    environment["cuda_visible_devices"] = selected
-    resolved["environment"] = environment
-    for key in ["data_generation", "metadata_filter", "training", "evaluation", "real_world_benchmark"]:
-        stage_config = dict(resolved.get(key, {}))
-        if _is_auto_cuda(stage_config.get("cuda_visible_devices")):
-            stage_config["cuda_visible_devices"] = selected
-            resolved[key] = stage_config
-    return resolved
+def _resolve_cuda_for_stage(config, stage_config, resolve_auto=False):
+    cuda = _cuda_value(config, stage_config)
+    if not _is_auto_cuda(cuda):
+        return cuda
+    if not resolve_auto:
+        return None
+    if "_resolved_cuda_visible_devices" not in config:
+        config["_resolved_cuda_visible_devices"] = _select_cuda_device(config)
+    return config["_resolved_cuda_visible_devices"]
 
 
-def _env_for_stage(config, stage_config):
+def _env_for_stage(config, stage_config, resolve_cuda=False):
     env = os.environ.copy()
     base_env = config.get("environment", {})
     for key, value in base_env.items():
+        if str(key).lower() in {"cuda_visible_devices", "auto_cuda_devices"}:
+            continue
         env[str(key).upper()] = str(value)
     for key, value in stage_config.get("environment", {}).items():
+        if str(key).lower() in {"cuda_visible_devices", "auto_cuda_devices"}:
+            continue
         env[str(key).upper()] = str(value)
-    cuda = _cuda_value(config, stage_config)
+    cuda = _resolve_cuda_for_stage(config, stage_config, resolve_auto=resolve_cuda)
     if cuda is not None:
         env["CUDA_VISIBLE_DEVICES"] = str(cuda)
     return env
@@ -197,7 +188,11 @@ def run_data_generation(config, config_path):
         "--config",
         str(config_path),
     ]
-    _run_command(command, data_config.get("log_path", "logs/01_generate_configured.log"), env=_env_for_stage(config, data_config))
+    _run_command(
+        command,
+        data_config.get("log_path", "logs/01_generate_configured.log"),
+        env=_env_for_stage(config, data_config, resolve_cuda=False),
+    )
 
 
 def run_metadata_filter(config):
@@ -215,7 +210,11 @@ def run_metadata_filter(config):
     for key, flag in option_map.items():
         _append_option(command, filter_config, key, flag)
     _bool_arg(command, filter_config.get("require_qc_pass", False), "--require-qc-pass")
-    _run_command(command, filter_config.get("log_path", "logs/01b_filter_metadata_configured.log"), env=_env_for_stage(config, filter_config))
+    _run_command(
+        command,
+        filter_config.get("log_path", "logs/01b_filter_metadata_configured.log"),
+        env=_env_for_stage(config, filter_config, resolve_cuda=False),
+    )
 
 
 def run_training(config):
@@ -247,7 +246,11 @@ def run_training(config):
         _append_option(command, train_config, key, flag)
     _bool_arg(command, train_config.get("normalize_target", False), "--normalize-target")
     _bool_arg(command, train_config.get("include_boundary_channel", False), "--include-boundary-channel")
-    _run_command(command, train_config.get("log_path", "logs/02_train_configured.log"), env=_env_for_stage(config, train_config))
+    _run_command(
+        command,
+        train_config.get("log_path", "logs/02_train_configured.log"),
+        env=_env_for_stage(config, train_config, resolve_cuda=True),
+    )
 
 
 def run_evaluation(config):
@@ -272,7 +275,7 @@ def run_evaluation(config):
             command.extend(["--output-dir", str(Path(output_dir) / str(split))])
         _bool_arg(command, eval_config.get("include_boundary_channel", False), "--include-boundary-channel")
         log_template = eval_config.get("log_path_template", "logs/03_eval_{split}.log")
-        _run_command(command, log_template.format(split=split), env=_env_for_stage(config, eval_config))
+        _run_command(command, log_template.format(split=split), env=_env_for_stage(config, eval_config, resolve_cuda=True))
 
 
 def run_real_world_benchmark(config, config_path):
@@ -283,12 +286,16 @@ def run_real_world_benchmark(config, config_path):
         "--config",
         str(config_path),
     ]
-    _run_command(command, benchmark_config.get("log_path", "logs/04_real_world_benchmark.log"), env=_env_for_stage(config, benchmark_config))
+    _run_command(
+        command,
+        benchmark_config.get("log_path", "logs/04_real_world_benchmark.log"),
+        env=_env_for_stage(config, benchmark_config, resolve_cuda=True),
+    )
 
 
 def run_pipeline(config_path):
     config_path = Path(config_path).resolve()
-    config = _resolve_auto_cuda(_load_config(config_path))
+    config = _load_config(config_path)
     if _stage_enabled(config, "data_generation"):
         run_data_generation(config, config_path)
     if _stage_enabled(config, "metadata_filter"):
