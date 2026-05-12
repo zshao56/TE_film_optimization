@@ -375,11 +375,6 @@ def generate_single_sample(args):
 
     sim_id = f"sim_{geom['geometry_type']}_{uuid.uuid4().hex[:8]}"
     
-    # Visual check: Save a 3D plot every 10 samples
-    if index % 10 == 0:
-        from visualize_random_structures import plot_single_structure
-        plot_single_structure(geom, sim_id)
-    
     try:
         run_simulation_pipeline(geom, sim_id)
         return True, sim_id

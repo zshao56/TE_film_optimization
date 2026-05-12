@@ -156,9 +156,9 @@ class Custom3DFDMSolver:
         print("Constructing 3D FDM matrix...")
         t0 = time.time()
         
-        row = []
-        col = []
-        data = []
+        row_arrs = []
+        col_arrs = []
+        dat_arrs = []
         
         def idx(i, j, k):
             return i * ny * nz + j * nz + k
@@ -179,13 +179,13 @@ class Custom3DFDMSolver:
         # --- Internal X direction ---
         valid_x = I < nx - 1
         iv, jv, kv = I[valid_x], J[valid_x], K[valid_x]
-        m1 = idx(iv, jv, kv)
-        m2 = idx(iv+1, jv, kv)
+        m1 = idx(iv, jv, kv).ravel()
+        m2 = idx(iv+1, jv, kv).ravel()
         k_x = k_int(kappa[iv, jv, kv], kappa[iv+1, jv, kv])
         coeff_x = k_x / (dx**2)
+        neg_cx = (-coeff_x).ravel()
         
-        row.extend(m1.ravel()); col.extend(m2.ravel()); data.extend(-coeff_x.ravel())
-        row.extend(m2.ravel()); col.extend(m1.ravel()); data.extend(-coeff_x.ravel())
+        row_arrs.extend([m1, m2]); col_arrs.extend([m2, m1]); dat_arrs.extend([neg_cx, neg_cx])
         
         A_center[iv, jv, kv] += coeff_x
         A_center[iv+1, jv, kv] += coeff_x
@@ -193,13 +193,13 @@ class Custom3DFDMSolver:
         # --- Internal Y direction ---
         valid_y = J < ny - 1
         iv, jv, kv = I[valid_y], J[valid_y], K[valid_y]
-        m1 = idx(iv, jv, kv)
-        m2 = idx(iv, jv+1, kv)
+        m1 = idx(iv, jv, kv).ravel()
+        m2 = idx(iv, jv+1, kv).ravel()
         k_y = k_int(kappa[iv, jv, kv], kappa[iv, jv+1, kv])
         coeff_y = k_y / (dy**2)
+        neg_cy = (-coeff_y).ravel()
         
-        row.extend(m1.ravel()); col.extend(m2.ravel()); data.extend(-coeff_y.ravel())
-        row.extend(m2.ravel()); col.extend(m1.ravel()); data.extend(-coeff_y.ravel())
+        row_arrs.extend([m1, m2]); col_arrs.extend([m2, m1]); dat_arrs.extend([neg_cy, neg_cy])
         
         A_center[iv, jv, kv] += coeff_y
         A_center[iv, jv+1, kv] += coeff_y
@@ -207,13 +207,13 @@ class Custom3DFDMSolver:
         # --- Internal Z direction ---
         valid_z = K < nz - 1
         iv, jv, kv = I[valid_z], J[valid_z], K[valid_z]
-        m1 = idx(iv, jv, kv)
-        m2 = idx(iv, jv, kv+1)
+        m1 = idx(iv, jv, kv).ravel()
+        m2 = idx(iv, jv, kv+1).ravel()
         k_z = k_int(kappa[iv, jv, kv], kappa[iv, jv, kv+1])
         coeff_z = k_z / (dz**2)
+        neg_cz = (-coeff_z).ravel()
         
-        row.extend(m1.ravel()); col.extend(m2.ravel()); data.extend(-coeff_z.ravel())
-        row.extend(m2.ravel()); col.extend(m1.ravel()); data.extend(-coeff_z.ravel())
+        row_arrs.extend([m1, m2]); col_arrs.extend([m2, m1]); dat_arrs.extend([neg_cz, neg_cz])
         
         A_center[iv, jv, kv] += coeff_z
         A_center[iv, jv, kv+1] += coeff_z
@@ -270,12 +270,14 @@ class Custom3DFDMSolver:
         A_center[:, -1, :] += coeff_yL
         b_matrix[:, -1, :] += coeff_yL * self.T_air
         
-        # Add diagonal to matrix
-        row.extend(m.ravel())
-        col.extend(m.ravel())
-        data.extend(A_center.ravel())
+        # Assemble sparse matrix via single numpy concatenation
+        diag_idx = m.ravel()
+        row_arrs.append(diag_idx); col_arrs.append(diag_idx); dat_arrs.append(A_center.ravel())
         
-        A = sp.coo_matrix((data, (row, col)), shape=(N, N)).tocsr()
+        all_row = np.concatenate(row_arrs)
+        all_col = np.concatenate(col_arrs)
+        all_dat = np.concatenate(dat_arrs)
+        A = sp.coo_matrix((all_dat, (all_row, all_col)), shape=(N, N)).tocsr()
         b = b_matrix.ravel()
         if not np.all(np.isfinite(A.data)):
             raise ValueError("FDM matrix contains non-finite coefficients.")
