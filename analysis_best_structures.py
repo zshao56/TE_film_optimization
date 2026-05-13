@@ -15,7 +15,7 @@ def analyze_geometry_distribution(metadata_path):
 
     # 统计各几何类型
     geo_stats = df.groupby('geometry_type').agg({
-        'delta_t_parallel': ['count', 'mean', 'std', 'max'],
+        'delta_T_parallel': ['count', 'mean', 'std', 'max'],
         'k_ratio': 'mean',
         'h_c': 'mean'
     }).round(2)
@@ -28,10 +28,31 @@ def analyze_geometry_distribution(metadata_path):
     others = df[df['geometry_type'] != 'random_smoothed']
 
     print("\n=== Random Smoothed vs Others ===")
-    print(f"Random Smoothed 平均ΔT: {random_smooth['delta_t_parallel'].mean():.2f} K")
-    print(f"其他类型平均ΔT: {others['delta_t_parallel'].mean():.2f} K")
-    print(f"Random Smoothed 最大ΔT: {random_smooth['delta_t_parallel'].max():.2f} K")
-    print(f"其他类型最大ΔT: {others['delta_t_parallel'].max():.2f} K")
+    print(f"Random Smoothed 平均ΔT: {random_smooth['delta_T_parallel'].mean():.2f} K")
+    print(f"其他类型平均ΔT: {others['delta_T_parallel'].mean():.2f} K")
+    print(f"Random Smoothed 最大ΔT: {random_smooth['delta_T_parallel'].max():.2f} K")
+    print(f"其他类型最大ΔT: {others['delta_T_parallel'].max():.2f} K")
+
+    # 分析ΔT分布区间
+    print("\n=== ΔT分布区间统计 ===")
+    bins = [0, 10, 50, 100, 200]
+    labels = ['0-10K', '10-50K', '50-100K', '>100K']
+    df['delta_T_range'] = pd.cut(df['delta_T_parallel'], bins=bins, labels=labels)
+
+    range_stats = df.groupby('delta_T_range', observed=True).agg({
+        'delta_T_parallel': 'count',
+        'geometry_type': lambda x: x.value_counts().index[0]  # 最常见的几何类型
+    })
+    range_stats.columns = ['样本数', '主导几何类型']
+    print(range_stats)
+
+    # 各几何类型在高ΔT区域的表现
+    print("\n=== 高ΔT区域(>50K)各几何类型分布 ===")
+    high_delta_t = df[df['delta_T_parallel'] > 50]
+    high_geo_dist = high_delta_t['geometry_type'].value_counts()
+    print(high_geo_dist)
+    print(f"\n高ΔT区域总样本数: {len(high_delta_t)}")
+    print(f"占总样本比例: {len(high_delta_t)/len(df)*100:.2f}%")
 
     return geo_stats
 
