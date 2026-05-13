@@ -19,14 +19,14 @@ class ConvBlock3D(nn.Module):
         return self.pool(x)
 
 class ThermoNetFusion(nn.Module):
-    def __init__(self, scalar_dim=5):
+    def __init__(self, scalar_dim=5, input_channels=1):
         super(ThermoNetFusion, self).__init__()
         
         # 1. 3D CNN Branch (Processing 50x50x20 Voxel Mask)
-        # Input: (B, 1, 50, 50, 20)
+        # Input: (B, input_channels, 50, 50, 20)
         # Upgraded capacity for 50,000 dataset
         self.cnn_branch = nn.Sequential(
-            ConvBlock3D(1, 32, pool=True),    # Output: (B, 32, 25, 25, 10)
+            ConvBlock3D(input_channels, 32, pool=True),    # Output: (B, 32, 25, 25, 10)
             ConvBlock3D(32, 64, pool=True),   # Output: (B, 64, 12, 12, 5)
             ConvBlock3D(64, 128, pool=False), # Output: (B, 128, 12, 12, 5)
             nn.AdaptiveAvgPool3d(1),          # Output: (B, 128, 1, 1, 1) - Global Average Pooling

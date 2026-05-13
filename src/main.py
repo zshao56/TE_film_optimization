@@ -33,6 +33,13 @@ def run_simulation_pipeline(geom_params, sim_id):
         mesh_data, field_data = solver.solve()
     finally:
         solver.cleanup()
+    if not field_data.get('solver_bounds_pass') or not field_data.get('surface_bounds_pass'):
+        raise RuntimeError(
+            f"Simulation {sim_id} failed physical solver checks: "
+            f"solver_bounds_pass={field_data.get('solver_bounds_pass')}, "
+            f"surface_bounds_pass={field_data.get('surface_bounds_pass')}, "
+            f"residual={field_data.get('solver_relative_residual')}."
+        )
     
     # Postprocess (2D Top Surface Area Measurement)
     wx, wy = 0.05 * Lx, 0.05 * Ly
@@ -57,8 +64,15 @@ def run_simulation_pipeline(geom_params, sim_id):
     }
     h5_path = save_h5_fields(sim_id, h5_data)
     
-    # Prepare parameters for JSON serialization (remove large numpy arrays like mask_3d)
-    json_params = {k: v for k, v in geom_params.items() if k != 'mask_3d'}
+    # Prepare parameters for JSON serialization (remove large arrays and unwrap numpy scalars).
+    json_params = {}
+    for key, value in geom_params.items():
+        if key in {'mask_3d', 'T_hot_map'}:
+            continue
+        if isinstance(value, (np.integer, np.floating, np.bool_)):
+            json_params[key] = value.item()
+        else:
+            json_params[key] = value
     
     # Save Metadata
     metadata_record = {
@@ -70,14 +84,57 @@ def run_simulation_pipeline(geom_params, sim_id):
         'length_Ly': Ly,
         'k_low': geom_params.get('k_low', geom_params.get('k_val')),
         'k_high': geom_params.get('k_high', geom_params.get('k_val')),
+        'k_ratio': geom_params.get('k_ratio'),
         'boundary_condition_id': 'BC-001-TOP-ELECTRODE',
         'T_hot': T_hot,
         'T_air': T_air,
+        'h_c': h_c,
+        'h_c_side': h_c_side,
+        'database_profile': geom_params.get('database_profile', 'legacy'),
+        'scenario_id': geom_params.get('scenario_id'),
+        'convection_regime': geom_params.get('convection_regime'),
+        'convection_regime_code': geom_params.get('convection_regime_code'),
+        'hot_boundary_type': geom_params.get('hot_boundary_type'),
+        'hot_boundary_type_code': geom_params.get('hot_boundary_type_code'),
+        'T_hot_min': geom_params.get('T_hot_min'),
+        'T_hot_max': geom_params.get('T_hot_max'),
+        'T_hot_min_delta': geom_params.get('T_hot_min_delta'),
+        'T_hot_amplitude': geom_params.get('T_hot_amplitude'),
+        'gradient_direction_code': geom_params.get('gradient_direction_code'),
+        'hotspot_x': geom_params.get('hotspot_x'),
+        'hotspot_y': geom_params.get('hotspot_y'),
+        'hotspot_sigma': geom_params.get('hotspot_sigma'),
+        'curvature_type': geom_params.get('curvature_type'),
+        'curvature_level': geom_params.get('curvature_level'),
+        'arc_angle': geom_params.get('arc_angle'),
+        'bend_axis': geom_params.get('bend_axis'),
+        'bend_axis_code': geom_params.get('bend_axis_code'),
+        'bend_radius': geom_params.get('bend_radius'),
+        'arc_length': geom_params.get('arc_length'),
+        'projected_length': geom_params.get('projected_length'),
+        'projected_Lx': geom_params.get('projected_Lx'),
+        'projected_Ly': geom_params.get('projected_Ly'),
         'measurement_wx': wx,
         'measurement_wy': wy,
         'electrode_min_gap': s_min,
         'qc_pass': qc_pass,
-        'field_file': h5_path
+        'field_file': h5_path,
+        'solver_method_code': field_data.get('solver_method_code'),
+        'solver_info': field_data.get('solver_info'),
+        'solver_iteration_count': field_data.get('solver_iteration_count'),
+        'solver_fallback_reason_code': field_data.get('solver_fallback_reason_code'),
+        'solver_relative_residual': field_data.get('solver_relative_residual'),
+        'solver_residual_tolerance': field_data.get('solver_residual_tolerance'),
+        'solver_temperature_min': field_data.get('solver_temperature_min'),
+        'solver_temperature_max': field_data.get('solver_temperature_max'),
+        'solver_lower_bound': field_data.get('solver_lower_bound'),
+        'solver_upper_bound': field_data.get('solver_upper_bound'),
+        'solver_bounds_tolerance': field_data.get('solver_bounds_tolerance'),
+        'solver_bounds_pass': field_data.get('solver_bounds_pass'),
+        'surface_bounds_pass': field_data.get('surface_bounds_pass'),
+        'surface_temperature_range': field_data.get('surface_temperature_range'),
+        'surface_min_bound_violation': field_data.get('surface_min_bound_violation'),
+        'surface_max_bound_violation': field_data.get('surface_max_bound_violation')
     }
     
     if best_electrodes:

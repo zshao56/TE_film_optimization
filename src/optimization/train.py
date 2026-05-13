@@ -89,9 +89,16 @@ def regression_loss(
     weights=None,
     underpredict_penalty=0.0,
     underpredict_cutoff=None,
+    low_delta_penalty=0.0,
+    low_delta_cutoff=None,
+    relative_error_epsilon=1.0,
+    target_mean=0.0,
+    target_std=1.0,
+    targets_are_normalized=False,
 ):
     base_loss = weighted_mse_loss(outputs, targets, weights)
     under_loss = outputs.new_tensor(0.0)
+    low_relative_loss = outputs.new_tensor(0.0)
 
     if underpredict_penalty > 0.0:
         if underpredict_cutoff is None:
@@ -101,8 +108,25 @@ def regression_loss(
             under_error = torch.relu(targets - outputs)
             under_loss = (under_error[top_mask] ** 2).mean()
 
-    total_loss = base_loss + underpredict_penalty * under_loss
-    return total_loss, base_loss, under_loss
+    if low_delta_penalty > 0.0:
+        if low_delta_cutoff is None:
+            raise ValueError("low_delta_cutoff is required when low_delta_penalty > 0.")
+        if relative_error_epsilon <= 0.0:
+            raise ValueError("relative_error_epsilon must be > 0.")
+        if targets_are_normalized:
+            raw_targets = targets * target_std + target_mean
+            raw_outputs = outputs * target_std + target_mean
+        else:
+            raw_targets = targets
+            raw_outputs = outputs
+        low_mask = raw_targets <= low_delta_cutoff
+        if low_mask.any().item():
+            denom = raw_targets.abs().clamp_min(relative_error_epsilon)
+            relative_error = (raw_outputs - raw_targets) / denom
+            low_relative_loss = (relative_error[low_mask] ** 2).mean()
+
+    total_loss = base_loss + underpredict_penalty * under_loss + low_delta_penalty * low_relative_loss
+    return total_loss, base_loss, under_loss, low_relative_loss
 
 
 def train_model(args):
@@ -117,18 +141,19 @@ def train_model(args):
     set_seed(args.seed)
     if args.underpredict_penalty < 0.0:
         raise ValueError("underpredict_penalty must be >= 0.")
+    if args.low_delta_penalty < 0.0:
+        raise ValueError("low_delta_penalty must be >= 0.")
 
     # Setup Device
     device = torch.device('cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu'))
     print(f"Using device: {device}")
 
     # Paths
-    metadata_csv = os.path.join(project_root, 'data', 'simulations', 'metadata.csv')
-    root_dir = os.path.join(project_root, 'data', 'simulations')
+    metadata_csv = args.metadata_csv or os.path.join(project_root, 'data', 'simulations', 'metadata.csv')
+    root_dir = args.root_dir or os.path.join(project_root, 'data', 'simulations')
     
     if not os.path.exists(metadata_csv):
-        print(f"Error: Database not found at {metadata_csv}. Please generate data first.")
-        return
+        raise FileNotFoundError(f"Database not found at {metadata_csv}. Please generate and filter data first.")
 
     print("Loading dataset (this may take a moment to scan the CSV)...")
     dataset = TEFilmDataset(
@@ -138,13 +163,13 @@ def train_model(args):
         return_weight=args.top_weight > 1.0,
         top_quantile=args.top_quantile,
         top_weight=args.top_weight,
+        include_boundary_channel=args.include_boundary_channel,
     )
     total_samples = len(dataset)
     print(f"Total successful simulations found: {total_samples}")
 
     if total_samples == 0:
-        print("Dataset is empty. Run generate_database.py first.")
-        return
+        raise RuntimeError("Dataset is empty. Run generate_database.py and metadata filtering first.")
 
     # Train/Val/Test Split (80% / 10% / 10%)
     train_size = int(0.8 * total_samples)
@@ -180,6 +205,12 @@ def train_model(args):
             f"High-delta-T underprediction penalty enabled: true delta_T >= "
             f"{underpredict_raw_cutoff:.6g} K gets penalty {args.underpredict_penalty:.3g}"
         )
+    if args.low_delta_penalty > 0.0:
+        print(
+            f"Low-delta-T relative-error penalty enabled: true delta_T <= "
+            f"{args.low_delta_cutoff:.6g} K gets penalty {args.low_delta_penalty:.3g} "
+            f"with epsilon={args.relative_error_epsilon:.6g} K"
+        )
 
     report_dir = os.path.join(project_root, args.metadata_report_dir)
     export_metadata_reports(
@@ -199,7 +230,9 @@ def train_model(args):
     val_loader = DataLoader(val_dataset, shuffle=False, **loader_kwargs)
 
     # Model, Loss, Optimizer
-    model = ThermoNetFusion(scalar_dim=5).to(device)
+    print(f"Scalar inputs ({len(dataset.scalar_cols)}): {dataset.scalar_cols}")
+    print(f"3D input channels: {dataset.input_channels}")
+    model = ThermoNetFusion(scalar_dim=len(dataset.scalar_cols), input_channels=dataset.input_channels).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
@@ -227,6 +260,7 @@ def train_model(args):
         train_loss = 0.0
         train_base_loss = 0.0
         train_under_loss = 0.0
+        train_low_relative_loss = 0.0
         for batch_idx, batch in enumerate(train_loader):
             masks, scalars, targets, weights = unpack_batch(batch)
             masks, scalars, targets = masks.to(device), scalars.to(device), targets.to(device)
@@ -235,12 +269,18 @@ def train_model(args):
             
             optimizer.zero_grad()
             outputs = model(masks, scalars)
-            loss, base_loss, under_loss = regression_loss(
+            loss, base_loss, under_loss, low_relative_loss = regression_loss(
                 outputs,
                 targets,
                 weights=weights,
                 underpredict_penalty=args.underpredict_penalty,
                 underpredict_cutoff=underpredict_loss_cutoff,
+                low_delta_penalty=args.low_delta_penalty,
+                low_delta_cutoff=args.low_delta_cutoff,
+                relative_error_epsilon=args.relative_error_epsilon,
+                target_mean=dataset.target_mean,
+                target_std=dataset.target_std,
+                targets_are_normalized=args.normalize_target,
             )
             loss.backward()
             if args.grad_clip > 0:
@@ -250,6 +290,7 @@ def train_model(args):
             train_loss += loss.item() * masks.size(0)
             train_base_loss += base_loss.item() * masks.size(0)
             train_under_loss += under_loss.item() * masks.size(0)
+            train_low_relative_loss += low_relative_loss.item() * masks.size(0)
             
             # Log batch loss to TensorBoard
             global_step = epoch * len(train_loader) + batch_idx
@@ -257,6 +298,8 @@ def train_model(args):
             writer.add_scalar('Loss/Train_Base_MSE_Batch', base_loss.item(), global_step)
             if args.underpredict_penalty > 0.0:
                 writer.add_scalar('Loss/Train_Underpredict_Batch', under_loss.item(), global_step)
+            if args.low_delta_penalty > 0.0:
+                writer.add_scalar('Loss/Train_LowRelative_Batch', low_relative_loss.item(), global_step)
             
             if batch_idx % 10 == 0:
                 print(f"Epoch {epoch+1}/{args.epochs} [{batch_idx*len(masks)}/{len(train_dataset)}] Loss: {loss.item():.4f}")
@@ -264,26 +307,35 @@ def train_model(args):
         train_loss /= len(train_dataset)
         train_base_loss /= len(train_dataset)
         train_under_loss /= len(train_dataset)
+        train_low_relative_loss /= len(train_dataset)
         
         # --- Validation ---
         model.eval()
         val_loss = 0.0
         val_base_loss = 0.0
         val_under_loss = 0.0
+        val_low_relative_loss = 0.0
         with torch.no_grad():
             for batch_idx, batch in enumerate(val_loader):
                 masks, scalars, targets, _weights = unpack_batch(batch)
                 masks, scalars, targets = masks.to(device), scalars.to(device), targets.to(device)
                 outputs = model(masks, scalars)
-                loss, base_loss, under_loss = regression_loss(
+                loss, base_loss, under_loss, low_relative_loss = regression_loss(
                     outputs,
                     targets,
                     underpredict_penalty=args.underpredict_penalty,
                     underpredict_cutoff=underpredict_loss_cutoff,
+                    low_delta_penalty=args.low_delta_penalty,
+                    low_delta_cutoff=args.low_delta_cutoff,
+                    relative_error_epsilon=args.relative_error_epsilon,
+                    target_mean=dataset.target_mean,
+                    target_std=dataset.target_std,
+                    targets_are_normalized=args.normalize_target,
                 )
                 val_loss += loss.item() * masks.size(0)
                 val_base_loss += base_loss.item() * masks.size(0)
                 val_under_loss += under_loss.item() * masks.size(0)
+                val_low_relative_loss += low_relative_loss.item() * masks.size(0)
                 
                 # Log validation batch loss to TensorBoard
                 val_global_step = epoch * len(val_loader) + batch_idx
@@ -291,6 +343,8 @@ def train_model(args):
                 writer.add_scalar('Loss/Val_Base_MSE_Batch', base_loss.item(), val_global_step)
                 if args.underpredict_penalty > 0.0:
                     writer.add_scalar('Loss/Val_Underpredict_Batch', under_loss.item(), val_global_step)
+                if args.low_delta_penalty > 0.0:
+                    writer.add_scalar('Loss/Val_LowRelative_Batch', low_relative_loss.item(), val_global_step)
                 
                 if batch_idx % 10 == 0:
                     print(f"Epoch {epoch+1}/{args.epochs} [Val][{batch_idx*len(masks)}/{len(val_dataset)}] Loss: {loss.item():.4f}")
@@ -298,6 +352,7 @@ def train_model(args):
         val_loss /= len(val_dataset)
         val_base_loss /= len(val_dataset)
         val_under_loss /= len(val_dataset)
+        val_low_relative_loss /= len(val_dataset)
         previous_lr = optimizer.param_groups[0]['lr']
         scheduler.step(val_loss)
         current_lr = optimizer.param_groups[0]['lr']
@@ -310,6 +365,9 @@ def train_model(args):
         if args.underpredict_penalty > 0.0:
             writer.add_scalar('Loss/Train_Underpredict_Epoch_Avg', train_under_loss, epoch)
             writer.add_scalar('Loss/Val_Underpredict_Epoch_Avg', val_under_loss, epoch)
+        if args.low_delta_penalty > 0.0:
+            writer.add_scalar('Loss/Train_LowRelative_Epoch_Avg', train_low_relative_loss, epoch)
+            writer.add_scalar('Loss/Val_LowRelative_Epoch_Avg', val_low_relative_loss, epoch)
         writer.add_scalar('Learning_Rate', current_lr, epoch)
         
         lr_note = f" | LR: {current_lr:.6f}"
@@ -329,6 +387,9 @@ def train_model(args):
                     'target_mean': float(dataset.target_mean),
                     'target_std': float(dataset.target_std),
                     'scalar_cols': dataset.scalar_cols,
+                    'scalar_dim': len(dataset.scalar_cols),
+                    'input_channels': dataset.input_channels,
+                    'include_boundary_channel': args.include_boundary_channel,
                     'target_col': dataset.target_col,
                     'seed': args.seed,
                     'top_quantile': args.top_quantile,
@@ -337,6 +398,9 @@ def train_model(args):
                     'underpredict_penalty': args.underpredict_penalty,
                     'underpredict_quantile': underpredict_quantile,
                     'underpredict_cutoff': underpredict_raw_cutoff,
+                    'low_delta_penalty': args.low_delta_penalty,
+                    'low_delta_cutoff': args.low_delta_cutoff,
+                    'relative_error_epsilon': args.relative_error_epsilon,
                 },
                 save_path,
             )
@@ -366,12 +430,18 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducible splits')
     parser.add_argument('--run-name', type=str, default='thermonet_training', help='TensorBoard run directory under runs/')
     parser.add_argument('--metadata-report-dir', type=str, default=os.path.join('results', 'metadata'), help='Directory for split-labeled metadata reports')
+    parser.add_argument('--metadata-csv', type=str, default=None, help='Path to metadata.csv')
+    parser.add_argument('--root-dir', type=str, default=None, help='Directory containing the fields/ folder')
     parser.add_argument('--workers', type=int, default=4, help='Number of DataLoader workers')
     parser.add_argument('--normalize-target', action='store_true', help='Train on Z-score normalized delta_T targets')
     parser.add_argument('--top-quantile', type=float, default=0.9, help='High delta_T quantile used for optional weighted loss')
     parser.add_argument('--top-weight', type=float, default=1.0, help='Loss weight for samples above --top-quantile; 1 disables weighting')
     parser.add_argument('--underpredict-penalty', type=float, default=0.0, help='Extra loss coefficient for underpredicting high-delta-T samples; 0 disables it')
     parser.add_argument('--underpredict-quantile', type=float, default=None, help='Quantile cutoff for underprediction penalty; defaults to --top-quantile')
+    parser.add_argument('--low-delta-penalty', type=float, default=0.0, help='Extra relative-error loss coefficient for low-delta-T samples; 0 disables it')
+    parser.add_argument('--low-delta-cutoff', type=float, default=15.0, help='Raw delta_T cutoff in K for the low-delta-T relative-error penalty')
+    parser.add_argument('--relative-error-epsilon', type=float, default=1.0, help='Denominator floor in K for low-delta-T relative-error loss')
+    parser.add_argument('--include-boundary-channel', action='store_true', help='Add the hot-boundary temperature map as a second 3D CNN input channel')
     
     args = parser.parse_args()
     train_model(args)

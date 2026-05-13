@@ -22,47 +22,54 @@ def compute_area_average_temperature(T_surface, x_coords, y_coords, xc, yc, wx, 
 
 def find_best_electrodes(T_surface, x_coords, y_coords, Lx, Ly, wx, wy, s_min):
     """
-    Search for the best hot and cold electrode positions on the top surface to maximize Delta T_parallel.
+    Search for the best hot and cold electrode positions on the top surface
+    to maximize Delta T_parallel.
+
+    Vectorized: precompute 400 candidate temperatures, then use numpy
+    broadcasting for pairwise distance / temperature-difference comparison.
     """
-    # Define search grid (e.g., discretize the valid area)
-    x_centers = np.linspace(wx/2, Lx - wx/2, 20)
-    y_centers = np.linspace(wy/2, Ly - wy/2, 20)
-    
-    best_diff = -1
-    best_hot = None
-    best_cold = None
-    
-    candidates = []
-    
-    for xc1 in x_centers:
-        for yc1 in y_centers:
-            T1 = compute_area_average_temperature(T_surface, x_coords, y_coords, xc1, yc1, wx, wy)
-            if np.isnan(T1): continue
-            
-            for xc2 in x_centers:
-                for yc2 in y_centers:
-                    # Check minimum distance constraint
-                    dist = np.sqrt((xc1 - xc2)**2 + (yc1 - yc2)**2)
-                    if dist < s_min:
-                        continue
-                        
-                    T2 = compute_area_average_temperature(T_surface, x_coords, y_coords, xc2, yc2, wx, wy)
-                    if np.isnan(T2): continue
-                    
-                    diff = abs(T1 - T2)
-                    if diff > best_diff:
-                        best_diff = diff
-                        if T1 >= T2:
-                            best_hot = (xc1, yc1, T1)
-                            best_cold = (xc2, yc2, T2)
-                        else:
-                            best_hot = (xc2, yc2, T2)
-                            best_cold = (xc1, yc1, T1)
-                            
-    if best_hot and best_cold:
-        return {
-            'x_hot': best_hot[0], 'y_hot': best_hot[1], 'T_hot_avg': best_hot[2],
-            'x_cold': best_cold[0], 'y_cold': best_cold[1], 'T_cold_avg': best_cold[2],
-            'delta_T_parallel': best_hot[2] - best_cold[2]
-        }
-    return None
+    x_centers = np.linspace(wx / 2, Lx - wx / 2, 20)
+    y_centers = np.linspace(wy / 2, Ly - wy / 2, 20)
+
+    # Step 1: precompute temperatures for all 20x20 = 400 candidates
+    nc = len(x_centers) * len(y_centers)
+    temps = np.empty(nc)
+    pos_x = np.empty(nc)
+    pos_y = np.empty(nc)
+
+    k = 0
+    for xc in x_centers:
+        for yc in y_centers:
+            pos_x[k] = xc
+            pos_y[k] = yc
+            temps[k] = compute_area_average_temperature(
+                T_surface, x_coords, y_coords, xc, yc, wx, wy
+            )
+            k += 1
+
+    valid = np.isfinite(temps)
+    if valid.sum() < 2:
+        return None
+    temps, pos_x, pos_y = temps[valid], pos_x[valid], pos_y[valid]
+
+    # Step 2: vectorised pairwise distance and |ΔT|
+    ddx = pos_x[:, None] - pos_x[None, :]
+    ddy = pos_y[:, None] - pos_y[None, :]
+    dist = np.sqrt(ddx ** 2 + ddy ** 2)
+    abs_diff = np.abs(temps[:, None] - temps[None, :])
+    abs_diff[dist < s_min] = -1.0
+
+    best_flat = int(np.argmax(abs_diff))
+    i, j = np.unravel_index(best_flat, abs_diff.shape)
+    if abs_diff[i, j] <= 0:
+        return None
+    if temps[i] < temps[j]:
+        i, j = j, i
+
+    return {
+        'x_hot': float(pos_x[i]), 'y_hot': float(pos_y[i]),
+        'T_hot_avg': float(temps[i]),
+        'x_cold': float(pos_x[j]), 'y_cold': float(pos_y[j]),
+        'T_cold_avg': float(temps[j]),
+        'delta_T_parallel': float(temps[i] - temps[j]),
+    }

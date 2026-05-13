@@ -116,9 +116,49 @@ python src/generate_database.py --samples 50000 --cores 8 --mode mixed --structu
 
 你可以使用 `--mode structured` 彻底排除随机平滑拓扑，或者使用 `--mode random` 回退到纯随机生成模式。
 
+如果要生成 v2 平面统一厚度数据库，使用配置化流水线。它会把厚度统一采样到 `0.0004` 到 `0.004` m，只生成平面样本，同时用低/中/高热端温差混合采样来照顾低 `delta_T_parallel` 和高 `delta_T_parallel` 两端：
+```bash
+python src/optimization/run_configured_pipeline.py --config configs/v2_flat_unified_thickness.json --stages data_generation
+```
+
+为了保证下一轮完整实验可复现，现在可以用一个 JSON 配置文件驱动整条链路。修改 `configs/v2_flat_unified_thickness.json` 即可统一调整数据采样范围、训练 batch/GPU/epoch 参数，以及现实验证场景。最上层的 `run` 字段控制是否执行某个阶段：
+
+```json
+"run": {
+  "data_generation": false,
+  "training": false,
+  "evaluation": false,
+  "real_world_benchmark": true
+}
+```
+
+然后一条命令运行：
+
+```bash
+python -u src/optimization/run_configured_pipeline.py --config configs/v2_flat_unified_thickness.json
+```
+
+同一个配置文件也可以单独传给数据生成脚本：
+
+```bash
+python src/generate_database.py --config configs/v2_flat_unified_thickness.json
+```
+
+如果是从零生成新版数据库，先清空旧的 `metadata.csv` 和 HDF5 场文件，避免旧版/新版 schema 混在一起：
+```bash
+rm -f data/simulations/metadata.csv
+rm -f data/simulations/fields/*.h5
+mkdir -p data/simulations/fields logs
+```
+
 训练代理模型：
 ```bash
 python src/optimization/train.py --batch-size 32 --epochs 50 --seed 42
+```
+
+训练 v2 数据库时，建议把热端二维温度图作为第二个 CNN 输入通道，并使用高温差欠预测惩罚和低温差相对误差惩罚：
+```bash
+python src/optimization/run_configured_pipeline.py --config configs/v2_flat_unified_thickness.json --stages training
 ```
 
 如果第一轮模型在高 `delta_T_parallel` 区域明显低估，可启动第二轮训练配置：
@@ -176,6 +216,41 @@ python src/optimization/inverse_design.py plot-top --screen-dir results/inverse_
 ```
 
 `screen` 阶段只做神经网络预测；`verify` 阶段才会运行 FDM，并把真实仿真结果写入数据库和 `verified_candidates.csv`。最终排序应看 `verified_candidates.csv` 里的真实 `fdm_delta_T`，不要看 surrogate rank。
+
+## 🌍 现实场景公平 Benchmark
+
+为了比较不同现实应用场景下的可达性能，可以使用现实场景 benchmark 脚本，而不是完全自由的 unconstrained inverse design。该脚本会固定每个场景的热端二维温度图、曲率、环境温度和对流强度，同时仍允许 surrogate 在薄膜厚度、材料热导率对比和几何结构之间搜索。每个场景的 top 候选随后都会用 FDM 复算。
+
+当前内置五个场景：
+
+| 场景 | 热端边界条件 | 曲率 | 对流 |
+| :--- | :--- | :--- | :--- |
+| 电池表面散热 | 中心热点 390 K，边缘 360 K | 平面 | 较强空调/强制对流 (`h_c=180`) |
+| 皮肤贴片 | 均匀 310.15 K (37 C) | 平面 | 自然对流 (`h_c=8`) |
+| 玻璃面板 | 中心热点 343.15 K (70 C)，边缘 323.15 K (50 C) | 平面 | 自然对流 (`h_c=8`) |
+| 汽车发动机表面 | 中心热点 433 K，边缘 373 K | 平面 | 行驶强制对流 (`h_c=300`) |
+| 手机表面 | 从 303.15 K 到 333.15 K 的线性温度梯度 | 平面 | 自然对流 (`h_c=8`) |
+
+一条命令跑完五个场景：
+
+```bash
+python -u src/optimization/run_configured_pipeline.py \
+  --config configs/v2_flat_unified_thickness.json \
+  --stages real_world_benchmark
+```
+
+输出目录会包含总表和每个场景的独立结果：
+
+```text
+scenario_definitions.csv
+benchmark_summary.csv
+<scenario_key>/screened_candidates.csv
+<scenario_key>/top_candidates.csv
+<scenario_key>/verified_candidates.csv
+<scenario_key>/top_candidate_masks.npz
+```
+
+注意：v2 采样会显式覆盖低/中/高热端温差。筛选完成后建议运行 `scripts/check_v2_dataset.py`，确认低温差区间和高温差区间都保留了足够样本。
 
 ## 📐 网格无关性与网格选择 (Grid Independence)
 

@@ -1,0 +1,318 @@
+{
+  "run": {
+    "data_generation": true,
+    "metadata_filter": true,
+    "training": true,
+    "evaluation": true,
+    "real_world_benchmark": true
+  },
+  "environment": {
+    "cuda_visible_devices": "auto",
+    "auto_cuda_devices": [
+      0,
+      1
+    ],
+    "omp_num_threads": "1",
+    "mkl_num_threads": "1",
+    "openblas_num_threads": "1"
+  },
+  "data_generation": {
+    "samples": 160000,
+    "cores": 24,
+    "mode": "mixed",
+    "structured_ratio": 0.85,
+    "seed": 20260513,
+    "profile": "expanded",
+    "clear_existing": true,
+    "allow_delete_data": true,
+    "log_path": "logs/01_generate_v2_flat_unified_thickness.log",
+    "grid": {
+      "Lx": 0.01,
+      "Ly": 0.01,
+      "nx": 50,
+      "ny": 50,
+      "nz": 20
+    },
+    "sampling": {
+      "environment": {
+        "T_air_range": [
+          293.15,
+          353.15
+        ]
+      },
+      "convection": {
+        "side_scale_range": [
+          0.6,
+          1.2
+        ],
+        "regimes": {
+          "natural": {
+            "range": [
+              2.0,
+              15.0
+            ],
+            "weight": 0.25,
+            "code": 0
+          },
+          "weak_forced": {
+            "range": [
+              15.0,
+              50.0
+            ],
+            "weight": 0.2,
+            "code": 1
+          },
+          "forced": {
+            "range": [
+              50.0,
+              150.0
+            ],
+            "weight": 0.3,
+            "code": 2
+          },
+          "strong_forced": {
+            "range": [
+              150.0,
+              500.0
+            ],
+            "weight": 0.25,
+            "code": 3
+          }
+        }
+      },
+      "hot_boundary": {
+        "type_weights": {
+          "uniform": 0.3,
+          "linear_gradient": 0.3,
+          "gaussian_hotspot": 0.4
+        },
+        "hot_min_delta_T_mixture": [
+          {
+            "name": "low",
+            "range": [
+              5.0,
+              20.0
+            ],
+            "weight": 0.25
+          },
+          {
+            "name": "mid",
+            "range": [
+              20.0,
+              100.0
+            ],
+            "weight": 0.45
+          },
+          {
+            "name": "high",
+            "range": [
+              100.0,
+              200.0
+            ],
+            "weight": 0.3
+          }
+        ],
+        "linear_amplitude_range": [
+          3.0,
+          35.0
+        ],
+        "linear_directions": [
+          "x",
+          "y"
+        ],
+        "gaussian_peak_delta_range": [
+          5.0,
+          45.0
+        ],
+        "hotspot_x_range": [
+          0.15,
+          0.85
+        ],
+        "hotspot_y_range": [
+          0.15,
+          0.85
+        ],
+        "hotspot_sigma_range": [
+          0.06,
+          0.24
+        ]
+      },
+      "thickness_range": [
+        0.0004,
+        0.004
+      ],
+      "materials": {
+        "k_low_range": [
+          0.05,
+          0.8
+        ],
+        "k_ratio_log_range": [
+          3.0,
+          80.0
+        ],
+        "k_high_clip": [
+          0.8,
+          10.0
+        ],
+        "min_k_gap": 0.75
+      },
+      "curvature": {
+        "level_weights": {
+          "0": 1.0
+        },
+        "bend_axes": [
+          "x"
+        ]
+      }
+    }
+  },
+  "metadata_filter": {
+    "metadata": "data/simulations/metadata.csv",
+    "output": "data/simulations/metadata_clean.csv",
+    "bad_output": "results/metadata/v2_flat_unified_thickness/bad_physical_rows.csv",
+    "report": "results/metadata/v2_flat_unified_thickness/physical_sanity_by_scenario.csv",
+    "tolerance": 0.001,
+    "max_relative_residual": 1e-8,
+    "require_qc_pass": true,
+    "log_path": "logs/01b_filter_metadata_v2_flat_unified_thickness.log"
+  },
+  "training": {
+    "cuda_visible_devices": "auto",
+    "metadata_csv": "data/simulations/metadata_clean.csv",
+    "root_dir": "data/simulations",
+    "batch_size": 512,
+    "epochs": 90,
+    "seed": 20260513,
+    "workers": 8,
+    "lr": 0.0003,
+    "weight_decay": 0.001,
+    "patience": 14,
+    "lr_patience": 5,
+    "normalize_target": true,
+    "top_quantile": 0.88,
+    "top_weight": 4.0,
+    "underpredict_penalty": 3.0,
+    "underpredict_quantile": 0.88,
+    "low_delta_penalty": 0.25,
+    "low_delta_cutoff": 15.0,
+    "relative_error_epsilon": 2.0,
+    "include_boundary_channel": true,
+    "run_name": "v2_flat_unified_thickness",
+    "metadata_report_dir": "results/metadata/v2_flat_unified_thickness",
+    "log_path": "logs/02_train_v2_flat_unified_thickness.log"
+  },
+  "evaluation": {
+    "cuda_visible_devices": "auto",
+    "model_path": "results/models/best_thermonet.pth",
+    "metadata_csv": "data/simulations/metadata_clean.csv",
+    "root_dir": "data/simulations",
+    "splits": [
+      "val",
+      "test"
+    ],
+    "seed": 20260513,
+    "batch_size": 512,
+    "workers": 8,
+    "top_quantile": 0.88,
+    "include_boundary_channel": true,
+    "output_dir": "results/evaluation/v2_flat_unified_thickness",
+    "log_path_template": "logs/03_eval_v2_flat_unified_thickness_{split}.log"
+  },
+  "real_world_benchmark": {
+    "cuda_visible_devices": "auto",
+    "model_path": "results/models/best_thermonet.pth",
+    "metadata_csv": "data/simulations/metadata_clean.csv",
+    "root_dir": "data/simulations",
+    "num_candidates": 75000,
+    "top_k": 750,
+    "verify_count": 75,
+    "batch_size": 512,
+    "verify_workers": 8,
+    "save_every": 10,
+    "seed": 20260513,
+    "mode": "mixed",
+    "structured_ratio": 0.9,
+    "output_dir": "results/real_world_benchmarks/v2_flat_unified_thickness",
+    "log_path": "logs/04_real_world_benchmark_v2_flat_unified_thickness.log",
+    "scenarios": [
+      {
+        "key": "battery_ac_flat",
+        "label": "Battery surface cooling",
+        "description": "Center hotspot 390 K, edge 360 K, flat geometry, strong air-conditioner convection.",
+        "T_air": 298.15,
+        "h_c": 180.0,
+        "h_c_side": 180.0,
+        "curvature_level": 0.0,
+        "bend_axis": "x",
+        "hot_boundary": {
+          "kind": "center_hotspot",
+          "center_temp": 390.0,
+          "edge_temp": 360.0,
+          "sigma": 0.24
+        }
+      },
+      {
+        "key": "skin_flat_uniform",
+        "label": "Skin patch",
+        "description": "Uniform 37 C body temperature, flat geometry, natural convection.",
+        "T_air": 298.15,
+        "h_c": 8.0,
+        "h_c_side": 8.0,
+        "curvature_level": 0.0,
+        "bend_axis": "x",
+        "hot_boundary": {
+          "kind": "uniform",
+          "temperature": 310.15
+        }
+      },
+      {
+        "key": "glass_center_hot_natural",
+        "label": "Glass panel",
+        "description": "Center 70 C, edge 50 C, flat geometry, natural convection.",
+        "T_air": 298.15,
+        "h_c": 8.0,
+        "h_c_side": 8.0,
+        "curvature_level": 0.0,
+        "bend_axis": "x",
+        "hot_boundary": {
+          "kind": "center_hotspot",
+          "center_temp": 343.15,
+          "edge_temp": 323.15,
+          "sigma": 0.25
+        }
+      },
+      {
+        "key": "engine_forced_flat",
+        "label": "Automotive engine surface",
+        "description": "Engine surface with revised center 433 K and edge 373 K, flat geometry, strong forced convection.",
+        "T_air": 303.15,
+        "h_c": 300.0,
+        "h_c_side": 300.0,
+        "curvature_level": 0.0,
+        "bend_axis": "x",
+        "hot_boundary": {
+          "kind": "center_hotspot",
+          "center_temp": 433.0,
+          "edge_temp": 373.0,
+          "sigma": 0.22
+        }
+      },
+      {
+        "key": "phone_linear_natural",
+        "label": "Phone surface",
+        "description": "One hot end and one cooler end, flat geometry, natural convection.",
+        "T_air": 298.15,
+        "h_c": 8.0,
+        "h_c_side": 8.0,
+        "curvature_level": 0.0,
+        "bend_axis": "x",
+        "hot_boundary": {
+          "kind": "linear_gradient",
+          "hot_temp": 333.15,
+          "cold_temp": 303.15,
+          "direction": "x"
+        }
+      }
+    ]
+  }
+}

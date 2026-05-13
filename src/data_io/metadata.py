@@ -22,7 +22,22 @@ REQUIRED_COLUMNS = [
     'T_hot', 'T_air', 'measurement_wx', 'measurement_wy', 'electrode_min_gap',
     'x_hot_electrode', 'y_hot_electrode', 'x_cold_electrode', 'y_cold_electrode',
     'T_hot_electrode_avg', 'T_cold_electrode_avg', 'delta_T_parallel',
-    'heat_flux_redirect_ratio', 'mesh_element_count', 'qc_pass', 'field_file'
+    'heat_flux_redirect_ratio', 'mesh_element_count', 'qc_pass', 'field_file',
+    'database_profile', 'scenario_id', 'k_ratio',
+    'convection_regime', 'convection_regime_code', 'h_c', 'h_c_side',
+    'hot_boundary_type', 'hot_boundary_type_code', 'T_hot_min', 'T_hot_max',
+    'T_hot_min_delta', 'T_hot_amplitude', 'gradient_direction_code', 'hotspot_x', 'hotspot_y',
+    'hotspot_sigma',
+    'curvature_type', 'curvature_level', 'arc_angle', 'bend_axis',
+    'bend_axis_code', 'bend_radius', 'arc_length', 'projected_length',
+    'projected_Lx', 'projected_Ly',
+    'solver_method_code', 'solver_info', 'solver_relative_residual',
+    'solver_iteration_count', 'solver_fallback_reason_code',
+    'solver_residual_tolerance', 'solver_temperature_min', 'solver_temperature_max',
+    'solver_lower_bound', 'solver_upper_bound', 'solver_bounds_tolerance',
+    'solver_bounds_pass',
+    'surface_bounds_pass', 'surface_temperature_range', 'surface_min_bound_violation',
+    'surface_max_bound_violation'
 ]
 
 def ensure_dirs():

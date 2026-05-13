@@ -116,9 +116,49 @@ python src/generate_database.py --samples 50000 --cores 8 --mode mixed --structu
 
 Use `--mode structured` to exclude random-smoothed topologies, or `--mode random` to reproduce the old noise-filtering workflow.
 
+For the v2 flat unified-thickness application database, use the configured pipeline. It samples thickness uniformly from `0.0004` to `0.004` m, keeps all generated cases flat, balances low/mid/high hot-boundary temperature differences, and records natural-to-strong-forced convection regimes:
+```bash
+python src/optimization/run_configured_pipeline.py --config configs/v2_flat_unified_thickness.json --stages data_generation
+```
+
+For full reproducibility, the whole workflow can be driven from one JSON config file. Edit `configs/v2_flat_unified_thickness.json` to change database sampling ranges, training hyperparameters, GPU visibility, and real-world verification scenarios. The top-level `run` block controls which stages execute:
+
+```json
+"run": {
+  "data_generation": false,
+  "training": false,
+  "evaluation": false,
+  "real_world_benchmark": true
+}
+```
+
+Then run:
+
+```bash
+python -u src/optimization/run_configured_pipeline.py --config configs/v2_flat_unified_thickness.json
+```
+
+The same config can also be passed directly to data generation:
+
+```bash
+python src/generate_database.py --config configs/v2_flat_unified_thickness.json
+```
+
+When generating the expanded database from scratch, clear old metadata and HDF5 fields first so legacy and expanded schemas do not mix:
+```bash
+rm -f data/simulations/metadata.csv
+rm -f data/simulations/fields/*.h5
+mkdir -p data/simulations/fields logs
+```
+
 Train the surrogate model:
 ```bash
 python src/optimization/train.py --batch-size 32 --epochs 50 --seed 42
+```
+
+For v2 training, include the hot-boundary temperature map as a second CNN channel and use the combined high-delta-T/low-delta-T loss:
+```bash
+python src/optimization/run_configured_pipeline.py --config configs/v2_flat_unified_thickness.json --stages training
 ```
 
 If the first run clearly underestimates the high `delta_T_parallel` region, use the second-stage training setup:
@@ -176,6 +216,41 @@ python src/optimization/inverse_design.py plot-top --screen-dir results/inverse_
 ```
 
 The `screen` command only runs neural-network inference. The `verify` command runs FDM, appends verified simulations to the database, and writes `verified_candidates.csv`. The final candidate ranking should use the FDM values in `verified_candidates.csv`, not the surrogate rank.
+
+## 🌍 Real-World Scenario Benchmark
+
+For fairer application-oriented comparisons, use the real-world benchmark runner instead of unconstrained inverse design. The script fixes each operating scenario's hot-boundary map, curvature, ambient temperature, and convection strength, while still letting the surrogate search over film thickness, material contrast, and geometry. Each scenario is then verified with the FDM solver.
+
+The current benchmark scenarios are:
+
+| Scenario | Hot-boundary condition | Curvature | Convection |
+| :--- | :--- | :--- | :--- |
+| Battery surface cooling | Center hotspot 390 K, edge 360 K | Flat | Strong forced/AC cooling (`h_c=180`) |
+| Skin patch | Uniform 310.15 K (37 C) | Flat | Natural convection (`h_c=8`) |
+| Glass panel | Center hotspot 343.15 K (70 C), edge 323.15 K (50 C) | Flat | Natural convection (`h_c=8`) |
+| Automotive engine surface | Center hotspot 433 K, edge 373 K | Flat | Strong forced driving airflow (`h_c=300`) |
+| Phone surface | Linear gradient from 303.15 K to 333.15 K | Flat | Natural convection (`h_c=8`) |
+
+Run all five scenarios with one command:
+
+```bash
+python -u src/optimization/run_configured_pipeline.py \
+  --config configs/v2_flat_unified_thickness.json \
+  --stages real_world_benchmark
+```
+
+The output directory contains one subfolder per scenario, plus:
+
+```text
+scenario_definitions.csv
+benchmark_summary.csv
+<scenario_key>/screened_candidates.csv
+<scenario_key>/top_candidates.csv
+<scenario_key>/verified_candidates.csv
+<scenario_key>/top_candidate_masks.npz
+```
+
+Note: the v2 sampling explicitly includes low, mid, and high hot-boundary temperature-difference bands. After filtering, run `scripts/check_v2_dataset.py` to confirm that the low-delta-T and high-delta-T regions remain represented.
 
 ## 📐 Grid Independence and Mesh Selection
 
