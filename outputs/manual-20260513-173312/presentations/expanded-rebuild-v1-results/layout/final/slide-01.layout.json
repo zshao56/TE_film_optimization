@@ -1,0 +1,989 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/ygk2ja",
+    "id": "ygk2ja",
+    "slide": 1,
+    "layoutId": "4ff21497-89c8-4e46-b9e6-56a770fb7257",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "7f11d05f-6181-401c-887d-fa14bb74f6f7",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Aptos",
+      "Aptos Display"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "4ff21497-89c8-4e46-b9e6-56a770fb7257",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "7f11d05f-6181-401c-887d-fa14bb74f6f7",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "7f11d05f-6181-401c-887d-fa14bb74f6f7",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/yhgn29gr",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#F8FAFC",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/58z25kb6",
+      "id": "2",
+      "bbox": [
+        54,
+        34,
+        520,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Main results",
+      "textPreview": "Main results",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Main results"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Main results",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Main results",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#64748B",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gn29gr2p",
+      "id": "3",
+      "bbox": [
+        54,
+        67,
+        74,
+        4
+      ],
+      "geometry": "rect",
+      "fillColor": "#2563EB",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nuxc3ylc",
+      "id": "4",
+      "bbox": [
+        1080,
+        34,
+        146,
+        24
+      ],
+      "geometry": "rect",
+      "text": "TE film surrogate",
+      "textPreview": "TE film surrogate",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "alignment": "right"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "TE film surrogate"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "TE film surrogate",
+          "runs": [
+            {
+              "index": 1,
+              "text": "TE film surrogate",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/y90je9cv",
+      "id": "5",
+      "bbox": [
+        54,
+        82,
+        900,
+        70
+      ],
+      "geometry": "rect",
+      "text": "Surrogate-assisted inverse design for thermal films",
+      "textPreview": "Surrogate-assisted inverse design for thermal films",
+      "resolvedFontSize": 32,
+      "resolvedTextStyle": {
+        "fontSize": 32,
+        "typeface": "Aptos Display",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Surrogate-assisted inverse design for thermal films"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Surrogate-assisted inverse design for thermal films",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Surrogate-assisted inverse design for thermal films",
+              "fontSize": 32,
+              "typeface": "Aptos Display",
+              "color": "#111827",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5wjudg7a",
+      "id": "6",
+      "bbox": [
+        56,
+        174,
+        920,
+        34
+      ],
+      "geometry": "rect",
+      "text": "Expanded 100k FDM dataset -> 3D CNN surrogate -> FDM-verified real-world candidates",
+      "textPreview": "Expanded 100k FDM dataset -> 3D CNN surrogate -> FDM-verified real-world candidates",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "fontSize": 16,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Expanded 100k FDM dataset -> 3D CNN surrogate -> FDM-verified real-world candidates"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Expanded 100k FDM dataset -> 3D CNN surrogate -> FDM-verified real-world candidates",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Expanded 100k FDM dataset -> 3D CNN surrogate -> FDM-verified real-world candidates",
+              "fontSize": 16,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gbq1oryt",
+      "id": "7",
+      "bbox": [
+        58,
+        235,
+        202,
+        94
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E5E7EB",
+      "lineWidth": 1
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nqxs72x4",
+      "id": "8",
+      "bbox": [
+        76,
+        251,
+        166,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Test R2",
+      "textPreview": "Test R2",
+      "resolvedFontSize": 12,
+      "resolvedTextStyle": {
+        "fontSize": 12,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Test R2"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Test R2",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Test R2",
+              "fontSize": 12,
+              "typeface": "Aptos",
+              "color": "#64748B",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u54zidon",
+      "id": "9",
+      "bbox": [
+        76,
+        277,
+        166,
+        36
+      ],
+      "geometry": "rect",
+      "text": "0.965",
+      "textPreview": "0.965",
+      "resolvedFontSize": 29,
+      "resolvedTextStyle": {
+        "fontSize": 29,
+        "typeface": "Aptos Display",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "0.965"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "0.965",
+          "runs": [
+            {
+              "index": 1,
+              "text": "0.965",
+              "fontSize": 29,
+              "typeface": "Aptos Display",
+              "color": "#2563EB",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cbulwval",
+      "id": "10",
+      "bbox": [
+        282,
+        235,
+        202,
+        94
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E5E7EB",
+      "lineWidth": 1
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5sneloj2",
+      "id": "11",
+      "bbox": [
+        300,
+        251,
+        166,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Test MAE",
+      "textPreview": "Test MAE",
+      "resolvedFontSize": 12,
+      "resolvedTextStyle": {
+        "fontSize": 12,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Test MAE"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Test MAE",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Test MAE",
+              "fontSize": 12,
+              "typeface": "Aptos",
+              "color": "#64748B",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u54zidon",
+      "id": "12",
+      "bbox": [
+        300,
+        277,
+        166,
+        36
+      ],
+      "geometry": "rect",
+      "text": "2.87 K",
+      "textPreview": "2.87 K",
+      "resolvedFontSize": 29,
+      "resolvedTextStyle": {
+        "fontSize": 29,
+        "typeface": "Aptos Display",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "2.87 K"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "2.87 K",
+          "runs": [
+            {
+              "index": 1,
+              "text": "2.87 K",
+              "fontSize": 29,
+              "typeface": "Aptos Display",
+              "color": "#16A34A",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nqxs72x4",
+      "id": "13",
+      "bbox": [
+        506,
+        235,
+        202,
+        94
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E5E7EB",
+      "lineWidth": 1
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/czed8v6p",
+      "id": "14",
+      "bbox": [
+        524,
+        251,
+        166,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Top-10% recall",
+      "textPreview": "Top-10% recall",
+      "resolvedFontSize": 12,
+      "resolvedTextStyle": {
+        "fontSize": 12,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Top-10% recall"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Top-10% recall",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Top-10% recall",
+              "fontSize": 12,
+              "typeface": "Aptos",
+              "color": "#64748B",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5kb6xkf6",
+      "id": "15",
+      "bbox": [
+        524,
+        277,
+        166,
+        36
+      ],
+      "geometry": "rect",
+      "text": "92.2%",
+      "textPreview": "92.2%",
+      "resolvedFontSize": 29,
+      "resolvedTextStyle": {
+        "fontSize": 29,
+        "typeface": "Aptos Display",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "92.2%"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "92.2%",
+          "runs": [
+            {
+              "index": 1,
+              "text": "92.2%",
+              "fontSize": 29,
+              "typeface": "Aptos Display",
+              "color": "#7C3AED",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ytsvu9kn",
+      "id": "16",
+      "bbox": [
+        730,
+        235,
+        202,
+        94
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E5E7EB",
+      "lineWidth": 1
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/neloj2t8",
+      "id": "17",
+      "bbox": [
+        748,
+        251,
+        166,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Best engine FDM",
+      "textPreview": "Best engine FDM",
+      "resolvedFontSize": 12,
+      "resolvedTextStyle": {
+        "fontSize": 12,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Best engine FDM"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Best engine FDM",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Best engine FDM",
+              "fontSize": 12,
+              "typeface": "Aptos",
+              "color": "#64748B",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gn29gr2p",
+      "id": "18",
+      "bbox": [
+        748,
+        277,
+        166,
+        36
+      ],
+      "geometry": "rect",
+      "text": "185.0 K",
+      "textPreview": "185.0 K",
+      "resolvedFontSize": 29,
+      "resolvedTextStyle": {
+        "fontSize": 29,
+        "typeface": "Aptos Display",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "185.0 K"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "185.0 K",
+          "runs": [
+            {
+              "index": 1,
+              "text": "185.0 K",
+              "fontSize": 29,
+              "typeface": "Aptos Display",
+              "color": "#DC2626",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 19,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/ih4byhgn",
+      "id": "19",
+      "bbox": [
+        70,
+        382,
+        1040,
+        205
+      ],
+      "contentType": "image/png",
+      "asset": {
+        "assetId": "cfb5392e-4834-4047-acf3-fc7bf68ee8fd",
+        "contentType": "image/png",
+        "byteLength": 60893
+      }
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tcj6tova",
+      "id": "20",
+      "bbox": [
+        930,
+        230,
+        260,
+        128
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#DBEAFE",
+      "lineWidth": 1.3
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0rqd4vmt",
+      "id": "21",
+      "bbox": [
+        930,
+        230,
+        6,
+        128
+      ],
+      "geometry": "rect",
+      "fillColor": "#2563EB",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/b6xkf6dc",
+      "id": "22",
+      "bbox": [
+        948,
+        246,
+        224,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Main thesis",
+      "textPreview": "Main thesis",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Main thesis"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Main thesis",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Main thesis",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#111827",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 23,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/il0rqd4v",
+      "id": "23",
+      "bbox": [
+        948,
+        274,
+        224,
+        66
+      ],
+      "geometry": "rect",
+      "text": "The surrogate is strong enough for fast screening, while FDM verification remains necessary for final performance claims.",
+      "textPreview": "The surrogate is strong enough for fast screening, while FDM verification remains necessary for final performance claims.",
+      "resolvedFontSize": 12.6,
+      "resolvedTextStyle": {
+        "fontSize": 12.6,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The surrogate is strong enough for fast"
+          },
+          {
+            "index": 2,
+            "text": "screening, while FDM verification"
+          },
+          {
+            "index": 3,
+            "text": "remains necessary for final"
+          },
+          {
+            "index": 4,
+            "text": "performance claims."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The surrogate is strong enough for fast screening, while FDM verification remains necessary for final performance claims.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "The surrogate is strong enough for fast screening, while FDM verification remains necessary for final performance claims.",
+              "fontSize": 12.6,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 24,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/t47y1kre",
+      "id": "24",
+      "bbox": [
+        1160,
+        674,
+        64,
+        22
+      ],
+      "geometry": "rect",
+      "text": "01",
+      "textPreview": "01",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "alignment": "right"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "01"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "01",
+          "runs": [
+            {
+              "index": 1,
+              "text": "01",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

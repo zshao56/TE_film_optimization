@@ -1,0 +1,1 @@
+Sources are local files in results/expanded_rebuild_v1_summary and Desktop log package. No external web sources or brand assets used. Figures are generated from server logs/CSV outputs.

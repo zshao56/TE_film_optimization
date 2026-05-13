@@ -1,0 +1,662 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/ny7aqk",
+    "id": "ny7aqk",
+    "slide": 15,
+    "layoutId": "4ff21497-89c8-4e46-b9e6-56a770fb7257",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "7f11d05f-6181-401c-887d-fa14bb74f6f7",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Aptos",
+      "Aptos Display"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "4ff21497-89c8-4e46-b9e6-56a770fb7257",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "7f11d05f-6181-401c-887d-fa14bb74f6f7",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "7f11d05f-6181-401c-887d-fa14bb74f6f7",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/lwval87e",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#F8FAFC",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/e9cvixcz",
+      "id": "2",
+      "bbox": [
+        54,
+        34,
+        520,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Terminal definition",
+      "textPreview": "Terminal definition",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Terminal definition"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Terminal definition",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Terminal definition",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#64748B",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3q5o7qpg",
+      "id": "3",
+      "bbox": [
+        54,
+        67,
+        74,
+        4
+      ],
+      "geometry": "rect",
+      "fillColor": "#2563EB",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/w3m94fu1",
+      "id": "4",
+      "bbox": [
+        1080,
+        34,
+        146,
+        24
+      ],
+      "geometry": "rect",
+      "text": "TE film surrogate",
+      "textPreview": "TE film surrogate",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "alignment": "right"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "TE film surrogate"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "TE film surrogate",
+          "runs": [
+            {
+              "index": 1,
+              "text": "TE film surrogate",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/loj2t83i",
+      "id": "5",
+      "bbox": [
+        54,
+        82,
+        900,
+        70
+      ],
+      "geometry": "rect",
+      "text": "Hot/cold terminals are measured on the top surface",
+      "textPreview": "Hot/cold terminals are measured on the top surface",
+      "resolvedFontSize": 32,
+      "resolvedTextStyle": {
+        "fontSize": 32,
+        "typeface": "Aptos Display",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Hot/cold terminals are measured on the top surface"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Hot/cold terminals are measured on the top surface",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Hot/cold terminals are measured on the top surface",
+              "fontSize": 32,
+              "typeface": "Aptos Display",
+              "color": "#111827",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ex0nuxc3",
+      "id": "6",
+      "bbox": [
+        56,
+        174,
+        920,
+        34
+      ],
+      "geometry": "rect",
+      "text": "The bottom face is the thermal hot boundary; Delta T_parallel is recovered between two top-surface electrode windows.",
+      "textPreview": "The bottom face is the thermal hot boundary; Delta T_parallel is recovered between two top-surface electrode windows.",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "fontSize": 16,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The bottom face is the thermal hot boundary; Delta T_parallel is recovered between two top-surface electrode windows."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The bottom face is the thermal hot boundary; Delta T_parallel is recovered between two top-surface electrode windows.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "The bottom face is the thermal hot boundary; Delta T_parallel is recovered between two top-surface electrode windows.",
+              "fontSize": 16,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/ih4byhgn",
+      "id": "7",
+      "bbox": [
+        56,
+        230,
+        500,
+        245
+      ],
+      "contentType": "image/png",
+      "asset": {
+        "assetId": "212866be-3038-4954-8db2-d9e2c8c52112",
+        "contentType": "image/png",
+        "byteLength": 125772
+      }
+    },
+    {
+      "order": 8,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/p4r65wju",
+      "id": "8",
+      "bbox": [
+        590,
+        222,
+        620,
+        285
+      ],
+      "contentType": "image/png",
+      "asset": {
+        "assetId": "7a5a10cb-bd8e-4e4e-8738-2866c509344e",
+        "contentType": "image/png",
+        "byteLength": 155076
+      }
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/lkjm1cfa",
+      "id": "9",
+      "bbox": [
+        90,
+        586,
+        405,
+        80
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#DBEAFE",
+      "lineWidth": 1.3
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hcrmhk3q",
+      "id": "10",
+      "bbox": [
+        90,
+        586,
+        6,
+        80
+      ],
+      "geometry": "rect",
+      "fillColor": "#DC2626",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/orytsvu9",
+      "id": "11",
+      "bbox": [
+        108,
+        602,
+        369,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Boundary convention",
+      "textPreview": "Boundary convention",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Boundary convention"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Boundary convention",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Boundary convention",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#111827",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/z61032ls",
+      "id": "12",
+      "bbox": [
+        108,
+        630,
+        369,
+        18
+      ],
+      "geometry": "rect",
+      "text": "Hot boundary: bottom face z=0. Cooling: top and side surfaces convect to ambient air.",
+      "textPreview": "Hot boundary: bottom face z=0. Cooling: top and side surfaces convect to ambient air.",
+      "resolvedFontSize": 12.6,
+      "resolvedTextStyle": {
+        "fontSize": 12.6,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Hot boundary: bottom face z=0. Cooling: top and side surfaces"
+          },
+          {
+            "index": 2,
+            "text": "convect to ambient air."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Hot boundary: bottom face z=0. Cooling: top and side surfaces convect to ambient air.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Hot boundary: bottom face z=0. Cooling: top and side surfaces convect to ambient air.",
+              "fontSize": 12.6,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/al87ed8b",
+      "id": "13",
+      "bbox": [
+        655,
+        586,
+        405,
+        80
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#DBEAFE",
+      "lineWidth": 1.3
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/h0fepkzu",
+      "id": "14",
+      "bbox": [
+        655,
+        586,
+        6,
+        80
+      ],
+      "geometry": "rect",
+      "fillColor": "#2563EB",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/sfil0rqd",
+      "id": "15",
+      "bbox": [
+        673,
+        602,
+        369,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Electrode convention",
+      "textPreview": "Electrode convention",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Electrode convention"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Electrode convention",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Electrode convention",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#111827",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zupwb2hw",
+      "id": "16",
+      "bbox": [
+        673,
+        630,
+        369,
+        18
+      ],
+      "geometry": "rect",
+      "text": "Hot/cold terminals are 0.5 mm x 0.5 mm windows on the top surface, chosen to maximize Delta T_parallel.",
+      "textPreview": "Hot/cold terminals are 0.5 mm x 0.5 mm windows on the top surface, chosen to maximize Delta T_parallel.",
+      "resolvedFontSize": 12.6,
+      "resolvedTextStyle": {
+        "fontSize": 12.6,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Hot/cold terminals are 0.5 mm x 0.5 mm windows on the top"
+          },
+          {
+            "index": 2,
+            "text": "surface, chosen to maximize Delta T_parallel."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Hot/cold terminals are 0.5 mm x 0.5 mm windows on the top surface, chosen to maximize Delta T_parallel.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Hot/cold terminals are 0.5 mm x 0.5 mm windows on the top surface, chosen to maximize Delta T_parallel.",
+              "fontSize": 12.6,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/a9w3m94f",
+      "id": "17",
+      "bbox": [
+        1160,
+        674,
+        64,
+        22
+      ],
+      "geometry": "rect",
+      "text": "15",
+      "textPreview": "15",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "alignment": "right"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "15"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "15",
+          "runs": [
+            {
+              "index": 1,
+              "text": "15",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

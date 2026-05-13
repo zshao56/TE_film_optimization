@@ -1,0 +1,15 @@
+Task mode: create
+Deck profile: engineering-platform
+
+Rendered QA:
+- Exported PPTX successfully with 12 slides.
+- Rendered all slide previews through artifact-tool.
+- Contact sheet reviewed.
+- Layout quality check: 0 errors, 8 tight-text warnings. Warnings are small text-box estimator issues in callouts/titles; rendered contact sheet is readable.
+
+Score:
+- story: 4/5
+- evidence: 4/5
+- composition: 4/5
+- readability: 4/5
+- technical accuracy: 4/5

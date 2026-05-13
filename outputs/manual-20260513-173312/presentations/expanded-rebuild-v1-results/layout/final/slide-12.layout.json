@@ -1,0 +1,908 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/z7fegf",
+    "id": "z7fegf",
+    "slide": 12,
+    "layoutId": "4ff21497-89c8-4e46-b9e6-56a770fb7257",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "7f11d05f-6181-401c-887d-fa14bb74f6f7",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Aptos",
+      "Aptos Display"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "4ff21497-89c8-4e46-b9e6-56a770fb7257",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "7f11d05f-6181-401c-887d-fa14bb74f6f7",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "7f11d05f-6181-401c-887d-fa14bb74f6f7",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/neloj2t8",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#F8FAFC",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/czed8v6p",
+      "id": "2",
+      "bbox": [
+        54,
+        34,
+        520,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Claims and next steps",
+      "textPreview": "Claims and next steps",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Claims and next steps"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Claims and next steps",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Claims and next steps",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#64748B",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5kb6xkf6",
+      "id": "3",
+      "bbox": [
+        54,
+        67,
+        74,
+        4
+      ],
+      "geometry": "rect",
+      "fillColor": "#2563EB",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u54zidon",
+      "id": "4",
+      "bbox": [
+        1080,
+        34,
+        146,
+        24
+      ],
+      "geometry": "rect",
+      "text": "TE film surrogate",
+      "textPreview": "TE film surrogate",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "alignment": "right"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "TE film surrogate"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "TE film surrogate",
+          "runs": [
+            {
+              "index": 1,
+              "text": "TE film surrogate",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nqxs72x4",
+      "id": "5",
+      "bbox": [
+        54,
+        82,
+        900,
+        70
+      ],
+      "geometry": "rect",
+      "text": "Main paper claim: neural screening plus FDM verification works",
+      "textPreview": "Main paper claim: neural screening plus FDM verification works",
+      "resolvedFontSize": 32,
+      "resolvedTextStyle": {
+        "fontSize": 32,
+        "typeface": "Aptos Display",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Main paper claim: neural screening plus FDM verification"
+          },
+          {
+            "index": 2,
+            "text": "works"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Main paper claim: neural screening plus FDM verification works",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Main paper claim: neural screening plus FDM verification works",
+              "fontSize": 32,
+              "typeface": "Aptos Display",
+              "color": "#111827",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cbulwval",
+      "id": "6",
+      "bbox": [
+        56,
+        174,
+        920,
+        34
+      ],
+      "geometry": "rect",
+      "text": "Use this run as the primary result; future work should target calibration in extreme regimes.",
+      "textPreview": "Use this run as the primary result; future work should target calibration in extreme regimes.",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "fontSize": 16,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Use this run as the primary result; future work should target calibration in extreme regimes."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Use this run as the primary result; future work should target calibration in extreme regimes.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Use this run as the primary result; future work should target calibration in extreme regimes.",
+              "fontSize": 16,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5sneloj2",
+      "id": "7",
+      "bbox": [
+        80,
+        248,
+        7,
+        7
+      ],
+      "geometry": "rect",
+      "fillColor": "#2563EB",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/y90je9cv",
+      "id": "8",
+      "bbox": [
+        100,
+        240,
+        500,
+        44
+      ],
+      "geometry": "rect",
+      "text": "Claim 1: The surrogate learns the expanded simulation distribution: test R2 = 0.965, MAE = 2.87 K.",
+      "textPreview": "Claim 1: The surrogate learns the expanded simulation distribution: test R2 = 0.965, MAE = 2.87 K.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Claim 1: The surrogate learns the expanded simulation"
+          },
+          {
+            "index": 2,
+            "text": "distribution: test R2 = 0.965, MAE = 2.87 K."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Claim 1: The surrogate learns the expanded simulation distribution: test R2 = 0.965, MAE = 2.87 K.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Claim 1: The surrogate learns the expanded simulation distribution: test R2 = 0.965, MAE = 2.87 K.",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#111827"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nuxc3ylc",
+      "id": "9",
+      "bbox": [
+        80,
+        318,
+        7,
+        7
+      ],
+      "geometry": "rect",
+      "fillColor": "#2563EB",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/36hcrmhk",
+      "id": "10",
+      "bbox": [
+        100,
+        310,
+        500,
+        44
+      ],
+      "geometry": "rect",
+      "text": "Claim 2: Ranking quality is high enough for inverse design: top-10% recall = 92.2%.",
+      "textPreview": "Claim 2: Ranking quality is high enough for inverse design: top-10% recall = 92.2%.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Claim 2: Ranking quality is high enough for inverse design:"
+          },
+          {
+            "index": 2,
+            "text": "top-10% recall = 92.2%."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Claim 2: Ranking quality is high enough for inverse design: top-10% recall = 92.2%.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Claim 2: Ranking quality is high enough for inverse design: top-10% recall = 92.2%.",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#111827"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/eloj2t83",
+      "id": "11",
+      "bbox": [
+        80,
+        388,
+        7,
+        7
+      ],
+      "geometry": "rect",
+      "fillColor": "#2563EB",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/lc7u54zi",
+      "id": "12",
+      "bbox": [
+        100,
+        380,
+        500,
+        44
+      ],
+      "geometry": "rect",
+      "text": "Claim 3: FDM verification is necessary, especially for high-forced engine-like scenarios.",
+      "textPreview": "Claim 3: FDM verification is necessary, especially for high-forced engine-like scenarios.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Claim 3: FDM verification is necessary, especially for high-forced"
+          },
+          {
+            "index": 2,
+            "text": "engine-like scenarios."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Claim 3: FDM verification is necessary, especially for high-forced engine-like scenarios.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Claim 3: FDM verification is necessary, especially for high-forced engine-like scenarios.",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#111827"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wra5gbq1",
+      "id": "13",
+      "bbox": [
+        80,
+        458,
+        7,
+        7
+      ],
+      "geometry": "rect",
+      "fillColor": "#2563EB",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7u54zido",
+      "id": "14",
+      "bbox": [
+        100,
+        450,
+        500,
+        44
+      ],
+      "geometry": "rect",
+      "text": "Claim 4: The verified benchmark finds strong candidates across all five real-world scenarios.",
+      "textPreview": "Claim 4: The verified benchmark finds strong candidates across all five real-world scenarios.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Claim 4: The verified benchmark finds strong candidates across"
+          },
+          {
+            "index": 2,
+            "text": "all five real-world scenarios."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Claim 4: The verified benchmark finds strong candidates across all five real-world scenarios.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Claim 4: The verified benchmark finds strong candidates across all five real-world scenarios.",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#111827"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ed8bat47",
+      "id": "15",
+      "bbox": [
+        735,
+        255,
+        370,
+        110
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#DBEAFE",
+      "lineWidth": 1.3
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l0rqd4vm",
+      "id": "16",
+      "bbox": [
+        735,
+        255,
+        6,
+        110
+      ],
+      "geometry": "rect",
+      "fillColor": "#DC2626",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wfyxobm5",
+      "id": "17",
+      "bbox": [
+        753,
+        271,
+        334,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Next experiment",
+      "textPreview": "Next experiment",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Next experiment"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Next experiment",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Next experiment",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#111827",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7mp0bi9s",
+      "id": "18",
+      "bbox": [
+        753,
+        299,
+        334,
+        48
+      ],
+      "geometry": "rect",
+      "text": "Add targeted high-Delta-T / strong-forced data and test whether engine underprediction decreases.",
+      "textPreview": "Add targeted high-Delta-T / strong-forced data and test whether engine underprediction decreases.",
+      "resolvedFontSize": 12.6,
+      "resolvedTextStyle": {
+        "fontSize": 12.6,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Add targeted high-Delta-T / strong-forced data and test"
+          },
+          {
+            "index": 2,
+            "text": "whether engine underprediction decreases."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Add targeted high-Delta-T / strong-forced data and test whether engine underprediction decreases.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Add targeted high-Delta-T / strong-forced data and test whether engine underprediction decreases.",
+              "fontSize": 12.6,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/e1w7mp0b",
+      "id": "19",
+      "bbox": [
+        735,
+        415,
+        370,
+        110
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#DBEAFE",
+      "lineWidth": 1.3
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qxs72x4n",
+      "id": "20",
+      "bbox": [
+        735,
+        415,
+        6,
+        110
+      ],
+      "geometry": "rect",
+      "fillColor": "#16A34A",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fil0rqd4",
+      "id": "21",
+      "bbox": [
+        753,
+        431,
+        334,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Reporting rule",
+      "textPreview": "Reporting rule",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Reporting rule"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Reporting rule",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Reporting rule",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#111827",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/83itgfml",
+      "id": "22",
+      "bbox": [
+        753,
+        459,
+        334,
+        48
+      ],
+      "geometry": "rect",
+      "text": "Report verified FDM performance as final. Use surrogate metrics to justify the screening stage.",
+      "textPreview": "Report verified FDM performance as final. Use surrogate metrics to justify the screening stage.",
+      "resolvedFontSize": 12.6,
+      "resolvedTextStyle": {
+        "fontSize": 12.6,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Report verified FDM performance as final. Use surrogate"
+          },
+          {
+            "index": 2,
+            "text": "metrics to justify the screening stage."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Report verified FDM performance as final. Use surrogate metrics to justify the screening stage.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Report verified FDM performance as final. Use surrogate metrics to justify the screening stage.",
+              "fontSize": 12.6,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 23,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xobm58z2",
+      "id": "23",
+      "bbox": [
+        1160,
+        674,
+        64,
+        22
+      ],
+      "geometry": "rect",
+      "text": "12",
+      "textPreview": "12",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "alignment": "right"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "12"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "12",
+          "runs": [
+            {
+              "index": 1,
+              "text": "12",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

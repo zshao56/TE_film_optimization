@@ -1,0 +1,662 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/idw0aj",
+    "id": "idw0aj",
+    "slide": 11,
+    "layoutId": "4ff21497-89c8-4e46-b9e6-56a770fb7257",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "7f11d05f-6181-401c-887d-fa14bb74f6f7",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Aptos",
+      "Aptos Display"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "4ff21497-89c8-4e46-b9e6-56a770fb7257",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "7f11d05f-6181-401c-887d-fa14bb74f6f7",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "7f11d05f-6181-401c-887d-fa14bb74f6f7",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tcj6tova",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#F8FAFC",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/il0rqd4v",
+      "id": "2",
+      "bbox": [
+        54,
+        34,
+        520,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Error analysis",
+      "textPreview": "Error analysis",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Error analysis"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Error analysis",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Error analysis",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#64748B",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/b6xkf6dc",
+      "id": "3",
+      "bbox": [
+        54,
+        67,
+        74,
+        4
+      ],
+      "geometry": "rect",
+      "fillColor": "#2563EB",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0je9cvix",
+      "id": "4",
+      "bbox": [
+        1080,
+        34,
+        146,
+        24
+      ],
+      "geometry": "rect",
+      "text": "TE film surrogate",
+      "textPreview": "TE film surrogate",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "alignment": "right"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "TE film surrogate"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "TE film surrogate",
+          "runs": [
+            {
+              "index": 1,
+              "text": "TE film surrogate",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/t47y1kre",
+      "id": "5",
+      "bbox": [
+        54,
+        82,
+        900,
+        70
+      ],
+      "geometry": "rect",
+      "text": "Where the model still struggles",
+      "textPreview": "Where the model still struggles",
+      "resolvedFontSize": 32,
+      "resolvedTextStyle": {
+        "fontSize": 32,
+        "typeface": "Aptos Display",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Where the model still struggles"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Where the model still struggles",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Where the model still struggles",
+              "fontSize": 32,
+              "typeface": "Aptos Display",
+              "color": "#111827",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/idonyd0z",
+      "id": "6",
+      "bbox": [
+        56,
+        174,
+        920,
+        34
+      ],
+      "geometry": "rect",
+      "text": "The remaining weakness is concentrated in high-forced and high-Delta-T regimes.",
+      "textPreview": "The remaining weakness is concentrated in high-forced and high-Delta-T regimes.",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "fontSize": 16,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The remaining weakness is concentrated in high-forced and high-Delta-T regimes."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The remaining weakness is concentrated in high-forced and high-Delta-T regimes.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "The remaining weakness is concentrated in high-forced and high-Delta-T regimes.",
+              "fontSize": 16,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/29gr2p8n",
+      "id": "7",
+      "bbox": [
+        70,
+        220,
+        500,
+        305
+      ],
+      "contentType": "image/png",
+      "asset": {
+        "assetId": "b8ea5130-8a5e-445c-af13-7098d6d114fe",
+        "contentType": "image/png",
+        "byteLength": 43205
+      }
+    },
+    {
+      "order": 8,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/donyd0z6",
+      "id": "8",
+      "bbox": [
+        620,
+        210,
+        520,
+        330
+      ],
+      "contentType": "image/png",
+      "asset": {
+        "assetId": "71783b23-2be8-4179-be0f-b20381c1f188",
+        "contentType": "image/png",
+        "byteLength": 91150
+      }
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/p0bi9s36",
+      "id": "9",
+      "bbox": [
+        135,
+        555,
+        420,
+        70
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#DBEAFE",
+      "lineWidth": 1.3
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/x0nuxc3y",
+      "id": "10",
+      "bbox": [
+        135,
+        555,
+        6,
+        70
+      ],
+      "geometry": "rect",
+      "fillColor": "#2563EB",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4fu18jqh",
+      "id": "11",
+      "bbox": [
+        153,
+        571,
+        384,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Family-level result",
+      "textPreview": "Family-level result",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Family-level result"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Family-level result",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Family-level result",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#111827",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fu18jqh0",
+      "id": "12",
+      "bbox": [
+        153,
+        599,
+        384,
+        8
+      ],
+      "geometry": "rect",
+      "text": "Errors are broadly stable; random-smoothed geometries are the most difficult by MAE.",
+      "textPreview": "Errors are broadly stable; random-smoothed geometries are the most difficult by MAE.",
+      "resolvedFontSize": 12.6,
+      "resolvedTextStyle": {
+        "fontSize": 12.6,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Errors are broadly stable; random-smoothed geometries are the"
+          },
+          {
+            "index": 2,
+            "text": "most difficult by MAE."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Errors are broadly stable; random-smoothed geometries are the most difficult by MAE.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Errors are broadly stable; random-smoothed geometries are the most difficult by MAE.",
+              "fontSize": 12.6,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m94fu18j",
+      "id": "13",
+      "bbox": [
+        670,
+        555,
+        420,
+        70
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#DBEAFE",
+      "lineWidth": 1.3
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xobm58z2",
+      "id": "14",
+      "bbox": [
+        670,
+        555,
+        6,
+        70
+      ],
+      "geometry": "rect",
+      "fillColor": "#EA580C",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/83itgfml",
+      "id": "15",
+      "bbox": [
+        688,
+        571,
+        384,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Scenario-level result",
+      "textPreview": "Scenario-level result",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Scenario-level result"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Scenario-level result",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Scenario-level result",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#111827",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fil0rqd4",
+      "id": "16",
+      "bbox": [
+        688,
+        599,
+        384,
+        8
+      ],
+      "geometry": "rect",
+      "text": "Hardest cases cluster around strong-forced and boundary-complexity regimes.",
+      "textPreview": "Hardest cases cluster around strong-forced and boundary-complexity regimes.",
+      "resolvedFontSize": 12.6,
+      "resolvedTextStyle": {
+        "fontSize": 12.6,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Hardest cases cluster around strong-forced and"
+          },
+          {
+            "index": 2,
+            "text": "boundary-complexity regimes."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Hardest cases cluster around strong-forced and boundary-complexity regimes.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Hardest cases cluster around strong-forced and boundary-complexity regimes.",
+              "fontSize": 12.6,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qxs72x4n",
+      "id": "17",
+      "bbox": [
+        1160,
+        674,
+        64,
+        22
+      ],
+      "geometry": "rect",
+      "text": "11",
+      "textPreview": "11",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "alignment": "right"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "11"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "11",
+          "runs": [
+            {
+              "index": 1,
+              "text": "11",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

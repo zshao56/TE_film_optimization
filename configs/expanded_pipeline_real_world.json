@@ -18,7 +18,7 @@
   },
   "data_generation": {
     "samples": 100000,
-    "cores": 12,
+    "cores": 24,
     "mode": "mixed",
     "structured_ratio": 0.8,
     "seed": 42,

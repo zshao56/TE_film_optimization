@@ -1,0 +1,5 @@
+task mode: create
+primary deck-profile: engineering-platform
+required proof objects: workflow diagram, training curve, held-out metrics, ranking metrics, real-world benchmark verification, limitation/next-step slide
+source requirements: use local generated logs, CSV metrics, and generated PNG figures from expanded_rebuild_v1_summary
+known missing inputs: no geometric renderings of final candidate masks are included; use quantitative proof objects instead
