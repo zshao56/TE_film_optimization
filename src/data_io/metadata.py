@@ -23,6 +23,7 @@ REQUIRED_COLUMNS = [
     'T_hot', 'T_air', 'measurement_wx', 'measurement_wy', 'electrode_min_gap',
     'x_hot_electrode', 'y_hot_electrode', 'x_cold_electrode', 'y_cold_electrode',
     'T_hot_electrode_avg', 'T_cold_electrode_avg', 'delta_T_parallel',
+    'delta_T_parallel_per_area',
     'heat_flux_redirect_ratio', 'mesh_element_count', 'qc_pass', 'field_file',
     'database_profile', 'scenario_id', 'k_ratio',
     'convection_regime', 'convection_regime_code', 'h_c', 'h_c_side',

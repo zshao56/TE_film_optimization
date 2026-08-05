@@ -17,6 +17,7 @@
 | 面内尺寸 | 固定 1cm×1cm | **Lx∈{1,2,3,4}cm，Ly∈{1/4,1/2,1}×Lx，均匀组合** |
 | 网格 | 固定 50×50×20 | **按 50 grids/cm 密度缩放（nx/ny 随尺寸）**，nz=20 |
 | 曲率 | 100% 平面 | **80% 平面 + 20% 圆弧曲面（metadata 参数化）** |
+| 目标指标 | 仅 delta_T_parallel | **新增 delta_T_parallel_per_area = ΔT/(Lx×Ly)，采集时直接写入 metadata；训练/逆设计以它为主目标（v3 配置 `training.target_col`）** |
 | 核数 | 配置固定 24 | **自动检测 CPU 核数**（可 `--cores` 覆盖） |
 | 其他 | mixed 0.85、expanded、seed 20260513、160000 | 不变 |
 
@@ -161,6 +162,11 @@ rsync -avzP --partial user@linux_host:/path/TE_film_optimization/data/simulation
 ```bash
 python -u src/optimization/run_configured_pipeline.py --config configs/v3_standard.json --stages training evaluation
 ```
+
+v3 配置的 `training.target_col` 已是 `delta_T_parallel_per_area`（单位面积温差，K/m²），
+训练与逆设计排名都使用该目标；`metadata.csv` 中同时保留原始 `delta_T_parallel`。
+注意：loss 相关超参（`top_quantile`、`low_delta_cutoff` 等）是针对旧目标尺度调的，
+换目标后可能需要重新调优（可用 `--target-col delta_T_parallel` 切回旧目标做对照实验）。
 
 > 训练注意：v3 样本的网格尺寸随 Lx/Ly 变化（50×50×20 ~ 200×200×20），
 > `training` 阶段读取 h5 时按样本实际形状处理，`metadata.csv` 的

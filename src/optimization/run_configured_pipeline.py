@@ -244,6 +244,7 @@ def run_training(config):
         "low_delta_penalty": "--low-delta-penalty",
         "low_delta_cutoff": "--low-delta-cutoff",
         "relative_error_epsilon": "--relative-error-epsilon",
+        "target_col": "--target-col",
     }
     for key, flag in option_map.items():
         _append_option(command, train_config, key, flag)

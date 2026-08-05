@@ -282,6 +282,14 @@ arc
 delta_T_parallel = T_hot_electrode_avg - T_cold_electrode_avg
 ```
 
+最终追求的目标是**单位面积的温差产出**（面积 = 样品总面积 Lx × Ly，单位 K/m²）：
+
+```text
+delta_T_parallel_per_area = delta_T_parallel / (Lx × Ly)
+```
+
+该指标在数据生成时直接写入 metadata（`delta_T_parallel_per_area` 列），同时保留原始 `delta_T_parallel` 供分析和验证。训练与逆设计以 `delta_T_parallel_per_area` 为主目标（见 `configs/v3_standard.json` 的 `training.target_col`）。
+
 当前测量参数由 `src/main.py` 自动按样品尺寸设置：
 
 | 参数                  | 对 1 cm × 1 cm 样品的值 | 单位  |
@@ -328,6 +336,7 @@ v2 metadata 中应记录的关键字段包括：
 | `curvature_type`, `curvature_level` | 曲率信息 |
 | `measurement_wx`, `measurement_wy`, `electrode_min_gap` | 电极测量设置 |
 | `delta_T_parallel` | 主目标，顶面最大平均面内温差 |
+| `delta_T_parallel_per_area` | 单位面积温差目标 = `delta_T_parallel / (Lx × Ly)`，训练/逆设计主目标 |
 | `qc_pass` | 后处理和物理检查是否通过 |
 | `field_file` | HDF5 场文件路径 |
 | `solver_relative_residual` | 求解器相对残差 |

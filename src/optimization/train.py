@@ -13,7 +13,7 @@ if current_dir not in sys.path:
     sys.path.append(current_dir)
 project_root = os.path.dirname(os.path.dirname(current_dir))
 
-from dataset import TEFilmDataset
+from dataset import TEFilmDataset, ShapeGroupBatchSampler
 from models import ThermoNetFusion
 
 def set_seed(seed):
@@ -164,6 +164,7 @@ def train_model(args):
         top_quantile=args.top_quantile,
         top_weight=args.top_weight,
         include_boundary_channel=args.include_boundary_channel,
+        target_col=args.target_col,
     )
     total_samples = len(dataset)
     print(f"Total successful simulations found: {total_samples}")
@@ -219,15 +220,28 @@ def train_model(args):
         report_dir
     )
 
-    # DataLoaders
+    # DataLoaders: batch samples grouped by grid shape (v3 grids scale with size)
     loader_kwargs = {
-        'batch_size': args.batch_size,
         'num_workers': args.workers,
         'pin_memory': device.type == 'cuda',
         'persistent_workers': args.workers > 0
     }
-    train_loader = DataLoader(train_dataset, shuffle=True, **loader_kwargs)
-    val_loader = DataLoader(val_dataset, shuffle=False, **loader_kwargs)
+    train_loader = DataLoader(
+        train_dataset,
+        batch_sampler=ShapeGroupBatchSampler(
+            train_dataset.indices, dataset.grid_keys, args.batch_size,
+            shuffle=True, generator=torch.Generator().manual_seed(args.seed + 1),
+        ),
+        **loader_kwargs,
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_sampler=ShapeGroupBatchSampler(
+            val_dataset.indices, dataset.grid_keys, args.batch_size,
+            shuffle=False,
+        ),
+        **loader_kwargs,
+    )
 
     # Model, Loss, Optimizer
     print(f"Scalar inputs ({len(dataset.scalar_cols)}): {dataset.scalar_cols}")
@@ -442,6 +456,7 @@ if __name__ == '__main__':
     parser.add_argument('--low-delta-cutoff', type=float, default=15.0, help='Raw delta_T cutoff in K for the low-delta-T relative-error penalty')
     parser.add_argument('--relative-error-epsilon', type=float, default=1.0, help='Denominator floor in K for low-delta-T relative-error loss')
     parser.add_argument('--include-boundary-channel', action='store_true', help='Add the hot-boundary temperature map as a second 3D CNN input channel')
+    parser.add_argument('--target-col', type=str, default='delta_T_parallel', help='Metadata column used as the prediction target (e.g. delta_T_parallel_per_area for per-area objective)')
     
     args = parser.parse_args()
     train_model(args)

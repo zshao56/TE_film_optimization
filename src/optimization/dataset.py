@@ -1,9 +1,42 @@
 import os
+import json
 import h5py
 import torch
 import pandas as pd
 import numpy as np
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, Sampler
+
+class ShapeGroupBatchSampler(Sampler):
+    """Batch indices grouped by grid shape (nx, ny, nz).
+
+    v3 samples have size-dependent grids (50x50x20 up to 200x200x20), and the
+    default DataLoader collate stacks tensors of identical shape. Grouping the
+    batch by grid shape keeps every batch collatable without padding artifacts.
+
+    `indices` maps each subset position to a dataset index (identity when the
+    sampler is used with the full dataset); the sampler yields subset positions.
+    """
+    def __init__(self, indices, grid_keys, batch_size, shuffle=True, generator=None):
+        self.batches = []
+        groups = {}
+        for position in range(len(indices)):
+            key = grid_keys[indices[position]]
+            groups.setdefault(key, []).append(position)
+        for group in groups.values():
+            if shuffle:
+                order = torch.randperm(len(group), generator=generator).tolist()
+                group = [group[i] for i in order]
+            self.batches.extend(group[i:i + batch_size] for i in range(0, len(group), batch_size))
+        if shuffle:
+            order = torch.randperm(len(self.batches), generator=generator).tolist()
+            self.batches = [self.batches[i] for i in order]
+
+    def __iter__(self):
+        return iter(self.batches)
+
+    def __len__(self):
+        return len(self.batches)
+
 
 class TEFilmDataset(Dataset):
     """
@@ -22,6 +55,7 @@ class TEFilmDataset(Dataset):
         top_weight=1.0,
         include_boundary_channel=False,
         scalar_cols=None,
+        target_col='delta_T_parallel',
         check_field_files=True,
     ):
         """
@@ -62,7 +96,9 @@ class TEFilmDataset(Dataset):
             df[col] = pd.to_numeric(df[col], errors='coerce')
             
         # Also ensure the target column is numeric
-        self.target_col = 'delta_T_parallel'
+        self.target_col = target_col
+        if self.target_col not in df.columns:
+            raise ValueError(f"Target column '{self.target_col}' not found in {metadata_csv}")
         df[self.target_col] = pd.to_numeric(df[self.target_col], errors='coerce')
 
         # Drop any rows that failed to parse (NaNs in our required columns)
@@ -84,6 +120,7 @@ class TEFilmDataset(Dataset):
                 self.data_frame = self.data_frame[field_exists].reset_index(drop=True)
         
         # Calculate statistics for normalization (Z-score)
+        self.grid_keys = self._build_grid_keys(self.data_frame)
         self.scalar_mean = self.data_frame[self.scalar_cols].mean().values
         self.scalar_std = self.data_frame[self.scalar_cols].std().values
         # Prevent division by zero if std is very small
@@ -112,6 +149,23 @@ class TEFilmDataset(Dataset):
 
     def __len__(self):
         return len(self.data_frame)
+
+    def _build_grid_keys(self, df):
+        keys = []
+        unknown = 0
+        for gp_json in df['geometry_parameters']:
+            try:
+                gp = json.loads(str(gp_json))
+                keys.append((int(gp['nx']), int(gp['ny']), int(gp['nz'])))
+            except (ValueError, TypeError, KeyError):
+                keys.append(None)
+                unknown += 1
+        if unknown:
+            print(
+                f"Warning: {unknown} samples lack nx/ny/nz in geometry_parameters; "
+                f"they are grouped into one batch pool regardless of field shape."
+            )
+        return keys
 
     def _field_filename(self, field_file):
         # Metadata may be generated on Windows and trained on Linux; normalize both

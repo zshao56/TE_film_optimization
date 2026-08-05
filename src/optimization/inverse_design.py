@@ -353,6 +353,7 @@ def screen_candidates(args):
         root_dir=root_dir,
         include_boundary_channel=include_boundary_channel,
         scalar_cols=scalar_cols,
+        target_col=checkpoint_meta.get("target_col", "delta_T_parallel"),
         check_field_files=False,
     )
     scalar_mean = dataset.scalar_mean.astype(np.float32)
@@ -455,6 +456,7 @@ VERIFY_COLUMNS = [
     "surrogate_rank",
     "predicted_delta_T",
     "fdm_delta_T",
+    "fdm_delta_T_per_area",
     "residual",
     "geometry_type",
     "T_hot_electrode_avg",
@@ -486,6 +488,8 @@ def _run_verification_task(row_dict, mask, hot_boundary):
     sim_id = f"inverse_{candidate_id}_{uuid.uuid4().hex[:8]}"
     metadata = run_simulation_pipeline(geom, sim_id)
     actual = metadata.get("delta_T_parallel")
+    area = float(geom.get("Lx", 0.01)) * float(geom.get("Ly", 0.01))
+    actual_per_area = None if actual is None else float(actual) / area
     predicted = float(row_dict["predicted_delta_T"])
     return {
         "candidate_id": candidate_id,
@@ -493,6 +497,7 @@ def _run_verification_task(row_dict, mask, hot_boundary):
         "surrogate_rank": int(row_dict["surrogate_rank"]),
         "predicted_delta_T": predicted,
         "fdm_delta_T": actual,
+        "fdm_delta_T_per_area": actual_per_area,
         "residual": None if actual is None else predicted - actual,
         "geometry_type": row_dict["geometry_type"],
         "T_hot_electrode_avg": metadata.get("T_hot_electrode_avg"),

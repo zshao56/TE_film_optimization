@@ -147,7 +147,8 @@ def run_simulation_pipeline(geom_params, sim_id):
             'y_cold_electrode': best_electrodes['y_cold'],
             'T_hot_electrode_avg': best_electrodes['T_hot_avg'],
             'T_cold_electrode_avg': best_electrodes['T_cold_avg'],
-            'delta_T_parallel': best_electrodes['delta_T_parallel']
+            'delta_T_parallel': best_electrodes['delta_T_parallel'],
+            'delta_T_parallel_per_area': best_electrodes['delta_T_parallel'] / (Lx * Ly)
         })
         
     append_metadata(metadata_record)

@@ -21,7 +21,7 @@ if current_dir not in sys.path:
     sys.path.append(current_dir)
 project_root = os.path.dirname(os.path.dirname(current_dir))
 
-from dataset import TEFilmDataset
+from dataset import TEFilmDataset, ShapeGroupBatchSampler
 from models import ThermoNetFusion
 
 
@@ -203,6 +203,7 @@ def evaluate_model(args):
         root_dir=root_dir,
         include_boundary_channel=include_boundary_channel,
         scalar_cols=checkpoint_scalar_cols,
+        target_col=checkpoint_meta.get("target_col", "delta_T_parallel"),
     )
     if len(dataset) == 0:
         raise RuntimeError("No successful samples were found in metadata.csv.")
@@ -211,13 +212,18 @@ def evaluate_model(args):
     print(f"Evaluating split: {args.split} ({len(split_indices)} samples)")
 
     loader_kwargs = {
-        "batch_size": args.batch_size,
-        "shuffle": False,
         "num_workers": args.workers,
         "pin_memory": device.type == "cuda",
         "persistent_workers": args.workers > 0,
     }
-    loader = DataLoader(split_dataset, **loader_kwargs)
+    loader = DataLoader(
+        split_dataset,
+        batch_sampler=ShapeGroupBatchSampler(
+            split_dataset.indices, dataset.grid_keys, args.batch_size,
+            shuffle=False,
+        ),
+        **loader_kwargs,
+    )
 
     input_channels = int(checkpoint_meta.get("input_channels", dataset.input_channels))
     scalar_dim = int(checkpoint_meta.get("scalar_dim", len(checkpoint_scalar_cols or dataset.scalar_cols)))
