@@ -225,9 +225,19 @@ def _sample_environment(rng, profile='legacy', nx=50, ny=50, sampling_config=Non
     return env
 
 
+def _sample_discrete_uniform(rng, values):
+    values = [float(v) for v in values]
+    return values[int(rng.integers(0, len(values)))]
+
+
 def _sample_thickness(rng, profile, sampling_config=None):
     if profile != 'expanded':
         return _sample_uniform_range(rng, _nested_get(sampling_config, ['legacy', 'thickness_range'], [0.0005, 0.002]))
+
+    # Discrete thickness values take priority (DATA_GENERATION_PARAMETERS.md section 4).
+    thickness_values = (sampling_config or {}).get('thickness_values')
+    if thickness_values:
+        return _sample_discrete_uniform(rng, thickness_values)
 
     if sampling_config and 'thickness_range' in sampling_config:
         return _sample_uniform_range(rng, sampling_config['thickness_range'])
@@ -251,6 +261,9 @@ def _sample_materials(rng, profile, sampling_config=None):
         return k_low, k_high
 
     material_config = (sampling_config or {}).get('materials', {})
+    if 'k_low' in material_config and 'k_high' in material_config:
+        return float(material_config['k_low']), float(material_config['k_high'])
+
     k_low = _sample_uniform_range(rng, material_config.get('k_low_range', [0.05, 0.8]))
     ratio_low, ratio_high = material_config.get('k_ratio_log_range', [3.0, 80.0])
     ratio = float(np.exp(rng.uniform(np.log(ratio_low), np.log(ratio_high))))
@@ -370,19 +383,50 @@ def _sample_geometry(Lx, Ly, h, k_low, k_high, nx, ny, nz, env_params, rng, mode
     return _sample_random_smoothed_structure(Lx, Ly, h, k_low, k_high, nx, ny, nz, env_params, rng)
 
 
+def _sample_domain_size(rng, sampling_config, grid_config):
+    """Sample in-plane domain size and derive grid resolution per sample.
+
+    Lx is drawn uniformly from discrete values (DATA_GENERATION_PARAMETERS.md
+    section 3) when `sampling.domain.Lx_values` is configured; otherwise the
+    fixed grid Lx/Ly are used. Grid density follows `nx_per_m` / `ny_per_m`
+    (default 5000 per metre = 50 grids/cm) unless fixed nx/ny are given.
+    """
+    domain_config = (sampling_config or {}).get('domain') or {}
+    if domain_config.get('Lx_values'):
+        Lx = _sample_discrete_uniform(rng, domain_config['Lx_values'])
+        ratios = domain_config.get('Ly_ratio_values', [1.0])
+        Ly = Lx * _sample_discrete_uniform(rng, ratios)
+    else:
+        Lx = float(grid_config.get('Lx', 0.01))
+        Ly = float(grid_config.get('Ly', 0.01))
+
+    if 'nx_per_m' in grid_config:
+        nx = max(2, int(round(float(grid_config['nx_per_m']) * Lx)))
+        ny = max(2, int(round(float(grid_config['ny_per_m']) * Ly)))
+    else:
+        nx = int(grid_config.get('nx', 50))
+        ny = int(grid_config.get('ny', 50))
+    nz = int(grid_config.get('nz', 20))
+    return Lx, Ly, nx, ny, nz
+
+
 def generate_single_sample(args):
     """
     Worker function to generate and simulate a single structure.
     """
-    index, Lx, Ly, nx, ny, nz, mode, structured_ratio, profile, seed, sampling_config = args
+    index, mode, structured_ratio, profile, seed, sampling_config, grid_config = args
     rng = np.random.default_rng(seed)
     
     # 1. Randomize physics and dimensions
     h = _sample_thickness(rng, profile, sampling_config)
     k_low, k_high = _sample_materials(rng, profile, sampling_config)
+    Lx, Ly, nx, ny, nz = _sample_domain_size(rng, sampling_config, grid_config)
     
     env_params = _sample_environment(rng, profile=profile, nx=nx, ny=ny, sampling_config=sampling_config)
     geom = _sample_geometry(Lx, Ly, h, k_low, k_high, nx, ny, nz, env_params, rng, mode, structured_ratio)
+    geom['nx'] = nx
+    geom['ny'] = ny
+    geom['nz'] = nz
     geom.update(_sample_curvature(rng, Lx, Ly, profile, sampling_config))
     geom['database_profile'] = profile
     geom['k_ratio'] = float(k_high / (k_low + 1e-15))
@@ -409,11 +453,6 @@ def build_massive_database(num_samples, max_workers=None, mode='mixed', structur
         raise ValueError("structured_ratio must be between 0 and 1.")
 
     grid_config = grid_config or {}
-    Lx = float(grid_config.get('Lx', 0.01))
-    Ly = float(grid_config.get('Ly', 0.01))
-    nx = int(grid_config.get('nx', 50))
-    ny = int(grid_config.get('ny', 50))
-    nz = int(grid_config.get('nz', 20))
     
     # 1. Check existing database for resume capability
     metadata_path = os.path.join(current_dir, '..', 'data', 'simulations', 'metadata.csv')
@@ -452,16 +491,12 @@ def build_massive_database(num_samples, max_workers=None, mode='mixed', structur
     tasks = [
         (
             existing_count + i,
-            Lx,
-            Ly,
-            nx,
-            ny,
-            nz,
             mode,
             structured_ratio,
             profile,
             int(child_seeds[existing_count + i].generate_state(1)[0]),
             sampling_config or {},
+            grid_config,
         )
         for i in range(remaining_samples)
     ]
@@ -490,26 +525,26 @@ def build_massive_database(num_samples, max_workers=None, mode='mixed', structur
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate a massive database of 3D TE film structures.")
     parser.add_argument("--config", type=str, default=None, help="Optional JSON pipeline/config file. Uses the data_generation section when present.")
-    parser.add_argument("--samples", type=int, default=1000, help="Number of structures to generate.")
-    parser.add_argument("--cores", type=int, default=None, help="Number of CPU cores to use. Defaults to all available.")
+    parser.add_argument("--samples", type=int, default=None, help="Number of structures to generate. Overrides the config value when set.")
+    parser.add_argument("--cores", type=int, default=None, help="Number of CPU cores to use. Overrides the config value when set. Defaults to all available.")
     parser.add_argument(
         "--mode",
         choices=["structured", "mixed", "random"],
-        default="mixed",
-        help="Structure source. 'mixed' uses mostly structured families plus some random-smoothed exploration."
+        default=None,
+        help="Structure source. 'mixed' uses mostly structured families plus some random-smoothed exploration. Overrides the config value when set."
     )
     parser.add_argument(
         "--structured-ratio",
         type=float,
-        default=0.8,
-        help="Fraction of structured samples in mixed mode."
+        default=None,
+        help="Fraction of structured samples in mixed mode. Overrides the config value when set."
     )
-    parser.add_argument("--seed", type=int, default=None, help="Optional root random seed for reproducible sampling.")
+    parser.add_argument("--seed", type=int, default=None, help="Optional root random seed for reproducible sampling. Overrides the config value when set.")
     parser.add_argument(
         "--profile",
         choices=["legacy", "expanded"],
-        default="legacy",
-        help="Database parameter profile. 'expanded' adds wider convection regimes, non-uniform hot boundaries, and curvature metadata."
+        default=None,
+        help="Database parameter profile. 'expanded' adds wider convection regimes, non-uniform hot boundaries, and curvature metadata. Overrides the config value when set."
     )
     
     args = parser.parse_args()
@@ -517,12 +552,12 @@ if __name__ == "__main__":
     data_config = _config_section(config, 'data_generation')
     sampling_config = data_config.get('sampling', {})
     grid_config = data_config.get('grid', {})
-    samples = int(data_config.get('samples', args.samples))
-    cores = data_config.get('cores', args.cores)
+    samples = int(args.samples) if args.samples is not None else int(data_config.get('samples', 1000))
+    cores = args.cores if args.cores is not None else data_config.get('cores')
     cores = None if cores is None else int(cores)
-    mode = data_config.get('mode', args.mode)
-    structured_ratio = float(data_config.get('structured_ratio', args.structured_ratio))
-    seed = data_config.get('seed', args.seed)
+    mode = args.mode if args.mode is not None else data_config.get('mode', 'mixed')
+    structured_ratio = args.structured_ratio if args.structured_ratio is not None else float(data_config.get('structured_ratio', 0.8))
+    seed = args.seed if args.seed is not None else data_config.get('seed')
     seed = None if seed is None else int(seed)
-    profile = data_config.get('profile', args.profile)
+    profile = args.profile if args.profile is not None else data_config.get('profile', 'legacy')
     build_massive_database(samples, cores, mode, structured_ratio, seed, profile, sampling_config, grid_config)

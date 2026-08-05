@@ -1,5 +1,6 @@
 import os
 import sys
+import numpy as np
 import pandas as pd
 import h5py
 import csv
@@ -96,7 +97,11 @@ def save_h5_fields(simulation_id: str, data: dict):
         for group_name, group_data in data.items():
             grp = f.create_group(group_name)
             for key, val in group_data.items():
-                if val is not None:
+                if val is None:
+                    continue
+                if isinstance(val, np.ndarray) and val.ndim >= 1:
+                    grp.create_dataset(key, data=val, compression='gzip', compression_opts=4)
+                else:
                     grp.create_dataset(key, data=val)
                     
     return file_path

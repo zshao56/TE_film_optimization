@@ -1,0 +1,9 @@
+# CPU-only dependencies for data generation and metadata filtering.
+# Install on the Linux CPU data-collection machine instead of requirements.txt
+# (torch is only needed for training/evaluation, not for FDM data generation).
+#   pip install -r requirements-cpu.txt
+numpy
+scipy
+pandas
+h5py
+tqdm

@@ -22,8 +22,10 @@ def run_simulation_pipeline(geom_params, sim_id):
     h_c = geom_params.get('h_c', 10.0)       # Convection coeff top
     h_c_side = geom_params.get('h_c_side', 10.0)# Convection coeff side
     
-    # Solver resolution
-    nx, ny, nz = 50, 50, 20
+    # Solver resolution (grid density 50 grids/cm by default, per DATA_GENERATION_PARAMETERS.md section 3)
+    nx = geom_params.get('nx', int(round(5000.0 * Lx)))
+    ny = geom_params.get('ny', int(round(5000.0 * Ly)))
+    nz = geom_params.get('nz', 20)
     
     print(f"Running simulation {sim_id} for {geom_params['geometry_type']}...")
     
