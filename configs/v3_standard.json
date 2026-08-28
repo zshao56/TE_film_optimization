@@ -18,12 +18,13 @@
   },
   "data_generation": {
     "samples": 160000,
+    "cores": 30,
     "mode": "mixed",
     "structured_ratio": 0.85,
     "seed": 20260513,
     "profile": "expanded",
-    "clear_existing": true,
-    "allow_delete_data": true,
+    "clear_existing": false,
+    "allow_delete_data": false,
     "log_path": "logs/01_generate_v3_standard.log",
     "grid": {
       "nx_per_m": 5000,

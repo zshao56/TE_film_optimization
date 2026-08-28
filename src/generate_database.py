@@ -1,8 +1,25 @@
 import os
 import sys
 import uuid
+import atexit
+import signal
 import argparse
 import json
+
+# Pin BLAS/OpenMP to one thread per process BEFORE numpy/scipy get imported.
+# Each pool worker runs sparse solves that otherwise start one BLAS thread per
+# core: 32 workers x ~7 threads pushed load average past 200 on a 32-core box
+# and cost roughly a 5x slowdown. setdefault leaves an explicit override from
+# the shell or from run_configured_pipeline.py untouched.
+for _thread_var in (
+    "OMP_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "OPENBLAS_NUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
+    "VECLIB_MAXIMUM_THREADS",
+):
+    os.environ.setdefault(_thread_var, "1")
+
 import numpy as np
 import pandas as pd
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -42,6 +59,95 @@ def _config_section(config, key):
     if not config:
         return {}
     return config.get(key, config)
+
+
+def _lock_path():
+    return os.path.join(current_dir, '..', 'data', 'simulations', '.generate.lock')
+
+
+def _release_generation_lock():
+    path = _lock_path()
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            owner = int(f.read().strip())
+    except (OSError, ValueError):
+        return
+    # Pool workers inherit this atexit hook; only the process that took the
+    # lock is allowed to drop it.
+    if owner != os.getpid():
+        return
+    try:
+        os.remove(path)
+    except OSError:
+        pass
+
+
+def _acquire_generation_lock():
+    """Refuse to start when another generator is already writing the database.
+
+    Two concurrent generators each compute their own resume offset, consume the
+    same seed indices, and interleave appends into metadata.csv. That is how
+    duplicate sample_seed rows appear.
+    """
+    path = _lock_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    if os.path.exists(path):
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                owner = int(f.read().strip())
+        except (OSError, ValueError):
+            owner = None
+        if owner is not None:
+            try:
+                os.kill(owner, 0)
+            except OSError:
+                print(f"Removing stale lock from dead PID {owner}: {path}")
+            else:
+                raise SystemExit(
+                    f"Another generator is running (PID {owner}). Stop it first, "
+                    f"or delete {path} if you are sure it is dead."
+                )
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(str(os.getpid()))
+    atexit.register(_release_generation_lock)
+    # atexit does not fire on SIGTERM by default; make sure the lock is dropped.
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
+
+
+def _resolve_resume_offset(df, existing_count, num_samples, seed, override=None):
+    """Return the first seed index that has not been consumed yet.
+
+    Resuming on the count of qc_pass rows regresses whenever the database holds
+    failed or de-duplicated rows: the offset lands on indices that were already
+    simulated, so the run reproduces them. Recover the real frontier by mapping
+    stored sample_seed values back to their position in the root seed sequence.
+    """
+    candidates = [existing_count, 0 if df is None else len(df), int(override or 0)]
+
+    if df is not None and 'geometry_parameters' in df.columns and len(df) > 0:
+        try:
+            stored = set()
+            for blob in df['geometry_parameters']:
+                value = json.loads(blob).get('sample_seed')
+                if value is not None:
+                    stored.add(int(value))
+            if stored:
+                children = np.random.SeedSequence(seed).spawn(num_samples)
+                frontier = 0
+                matched = 0
+                for index, child in enumerate(children):
+                    if int(child.generate_state(1)[0]) in stored:
+                        frontier = index + 1
+                        matched += 1
+                candidates.append(frontier)
+                print(
+                    f"Seed frontier: {frontier} (matched {matched}/{len(stored)} "
+                    f"stored seeds, {frontier - matched} gaps below the frontier)"
+                )
+        except (ValueError, TypeError, KeyError) as exc:
+            print(f"Warning: could not reconstruct the seed frontier ({exc}). Falling back to row count.")
+
+    return max(candidates)
 
 
 def _nested_get(config, keys, default):
@@ -445,7 +551,7 @@ def generate_single_sample(args):
     except Exception as e:
         return False, str(e)
 
-def build_massive_database(num_samples, max_workers=None, mode='mixed', structured_ratio=0.8, seed=None, profile='legacy', sampling_config=None, grid_config=None):
+def build_massive_database(num_samples, max_workers=None, mode='mixed', structured_ratio=0.8, seed=None, profile='legacy', sampling_config=None, grid_config=None, resume_offset=None):
     """
     Generate a large database using multiprocessing, with auto-resume capability.
     """
@@ -457,6 +563,7 @@ def build_massive_database(num_samples, max_workers=None, mode='mixed', structur
     # 1. Check existing database for resume capability
     metadata_path = os.path.join(current_dir, '..', 'data', 'simulations', 'metadata.csv')
     existing_count = 0
+    df = None
     if os.path.exists(metadata_path):
         try:
             df = pd.read_csv(metadata_path)
@@ -465,6 +572,7 @@ def build_massive_database(num_samples, max_workers=None, mode='mixed', structur
         except Exception as e:
             print(f"Warning: Could not read {metadata_path}. Starting from scratch. Error: {e}")
             existing_count = 0
+            df = None
 
     remaining_samples = num_samples - existing_count
 
@@ -472,9 +580,19 @@ def build_massive_database(num_samples, max_workers=None, mode='mixed', structur
         print(f"Database already contains {existing_count} successful samples. Target of {num_samples} reached. Exiting.")
         return
 
+    # How many more samples we owe is driven by qc_pass rows; which seed indices
+    # are still free is a separate question, answered by the frontier.
+    resume_offset = _resolve_resume_offset(df, existing_count, num_samples, seed, resume_offset)
+
     print(f"Target database size: {num_samples} samples.")
     if existing_count > 0:
         print(f"Found {existing_count} existing samples. Resuming and generating {remaining_samples} more...")
+        print(f"Resuming from seed index {resume_offset}.")
+        if resume_offset > existing_count:
+            print(
+                f"  (offset is {resume_offset - existing_count} ahead of the qc_pass count; "
+                f"failed or de-duplicated rows already consumed those indices)"
+            )
     else:
         print(f"Starting fresh database generation: {remaining_samples} samples.")
         
@@ -483,18 +601,24 @@ def build_massive_database(num_samples, max_workers=None, mode='mixed', structur
     if max_workers:
         print(f"Using {max_workers} CPU cores.")
     
-    root_sequence = np.random.SeedSequence(seed)
-    # Spawn total needed (existing + remaining) to maintain reproducibility offset
-    child_seeds = root_sequence.spawn(num_samples)
+    print(
+        f"Threads per worker: OMP={os.environ.get('OMP_NUM_THREADS')} "
+        f"MKL={os.environ.get('MKL_NUM_THREADS')} OPENBLAS={os.environ.get('OPENBLAS_NUM_THREADS')}"
+    )
 
-    # Prepare arguments for each task, offset by existing_count to avoid repeating seeds
+    root_sequence = np.random.SeedSequence(seed)
+    # Spawn enough children to cover the offset. spawn() is deterministic per
+    # index, so growing the count never disturbs seeds already handed out.
+    child_seeds = root_sequence.spawn(resume_offset + remaining_samples)
+
+    # Prepare arguments for each task, offset past every seed index already used
     tasks = [
         (
-            existing_count + i,
+            resume_offset + i,
             mode,
             structured_ratio,
             profile,
-            int(child_seeds[existing_count + i].generate_state(1)[0]),
+            int(child_seeds[resume_offset + i].generate_state(1)[0]),
             sampling_config or {},
             grid_config,
         )
@@ -546,6 +670,12 @@ if __name__ == "__main__":
         default=None,
         help="Database parameter profile. 'expanded' adds wider convection regimes, non-uniform hot boundaries, and curvature metadata. Overrides the config value when set."
     )
+    parser.add_argument(
+        "--resume-offset",
+        type=int,
+        default=None,
+        help="Force the first seed index to use. Normally detected automatically from the stored sample_seed values; set this only to override that detection."
+    )
     
     args = parser.parse_args()
     config = _load_json_config(args.config)
@@ -560,4 +690,7 @@ if __name__ == "__main__":
     seed = args.seed if args.seed is not None else data_config.get('seed')
     seed = None if seed is None else int(seed)
     profile = args.profile if args.profile is not None else data_config.get('profile', 'legacy')
-    build_massive_database(samples, cores, mode, structured_ratio, seed, profile, sampling_config, grid_config)
+    resume_offset = args.resume_offset if args.resume_offset is not None else data_config.get('resume_offset')
+    resume_offset = None if resume_offset is None else int(resume_offset)
+    _acquire_generation_lock()
+    build_massive_database(samples, cores, mode, structured_ratio, seed, profile, sampling_config, grid_config, resume_offset)
