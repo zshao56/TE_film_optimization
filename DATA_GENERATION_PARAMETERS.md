@@ -191,7 +191,7 @@ T_hot_map = T_hot_min + amplitude × coord
 
 ### 9.1 结构化几何族
 
-结构化几何从以下 5 类中随机选择：
+结构化几何从以下 6 类中随机选择：
 
 ```text
 wedge
@@ -199,15 +199,18 @@ curved_wedge
 step
 double_layer
 arc
+planar_split
 ```
 
-默认各几何族等概率采样。
+默认各几何族等概率采样（各约 1/6）。
+
+其中前五族的高热导材料都是**从底面往上堆积**，界面高度随面内位置变化（`mask = Z <= interface(X, Y)`），因此顶面每一处上方都仍覆盖一层低热导材料。`planar_split` 是唯一的例外：两种材料各自贯穿整个厚度，由一个竖直界面在面内分开，详见 9.7。
 
 通用方向参数：
 
 | 参数 | 范围 / 选项 | 说明 |
 |---|---|---|
-| `direction` | `x`, `y`, `diagonal` | `wedge`、`curved_wedge`、`step` 可选 |
+| `direction` | `x`, `y`, `diagonal` | `wedge`、`curved_wedge`、`step`、`planar_split` 可选 |
 | `direction` | `x`, `y` | `double_layer`、`arc` 只使用 x 或 y |
 | `reverse` | `true` / `false` | 约 50% 概率反向 |
 
@@ -253,6 +256,19 @@ arc
 | `arc_height_fraction` | `0.35 – 0.70` | 圆弧高度比例 |
 | `channel_half_width_fraction` | `0.04 – 0.10` | 圆弧通道半宽 |
 
+### 9.7 `planar_split`
+
+面内平面分割：一整块长方体被一个**竖直界面**切成两部分，左右拼接（`direction=x`）、前后拼接（`direction=y`）或对角拼接（`direction=diagonal`），两种材料各自贯穿全厚度。
+
+| 参数 | 范围 | 说明 |
+|---|---:|---|
+| `split_fraction` | `0.3 – 0.7` | 界面在 `direction` 方向上的位置 |
+| `interface_tilt` | `0.0`（50% 概率）或 `-0.35 – 0.35` | 界面随高度的线性倾斜量，`0` 为严格竖直；正值表示高热导侧在顶面更宽 |
+
+加入这一族的原因：在此前的数据库上做逆向设计，最终优化出的类楔形结构温差**反而不如平面结构**。原因是前五族的高热导区都是底面连通、顶面被低热导层整体覆盖，顶面对比度被均匀钝化；而竖直分割时高热导侧是一根从热端直通顶面的"热短路"柱，低热导侧是一根全厚度绝热柱，在给定厚度下能达到最大顶面对比度。
+
+严格来说纯竖直分割是 `step` 族的极限退化情形（`low_thickness_fraction → 0` 且 `high_thickness_fraction → 1`），但 `step` 的采样范围是 `0.10 – 0.45` 和 `0.55 – 0.95`，永远取不到这两个端点，所以最优拓扑一直落在参数空间的角上、从未被采样到。`interface_tilt` 有 50% 概率精确取 `0`，保证纯竖直构型被足额采样，其余取值给代理模型一条绕过该构型的连续路径。
+
 ## 10. 随机平滑拓扑采样
 
 随机拓扑用于保留一定探索性，当前在 mixed 模式中约占 15%。但是这个随机采样的结果不能有悬空的低导热材料，因为我们采用的是 DLP 打印，结构不需要额外的支撑。
@@ -282,13 +298,15 @@ arc
 delta_T_parallel = T_hot_electrode_avg - T_cold_electrode_avg
 ```
 
-最终追求的目标是**单位面积的温差产出**（面积 = 样品总面积 Lx × Ly，单位 K/m²）：
+**最终优化目标就是 `delta_T_parallel` 本身（单位 K），即最大温差。** 训练与逆设计均以它为唯一目标（`configs/v3_standard.json` 的 `training.target_col`），排名也直接看 FDM 复算出的真实 ΔT。
+
+单位面积温差仍然会在数据生成时算出并写入 metadata 的 `delta_T_parallel_per_area` 列（单位 K/m²），仅作为分析和横向比较的辅助列，不参与训练：
 
 ```text
 delta_T_parallel_per_area = delta_T_parallel / (Lx × Ly)
 ```
 
-该指标在数据生成时直接写入 metadata（`delta_T_parallel_per_area` 列），同时保留原始 `delta_T_parallel` 供分析和验证。训练与逆设计以 `delta_T_parallel_per_area` 为主目标（见 `configs/v3_standard.json` 的 `training.target_col`）。
+> 说明：v3 早期曾把 `delta_T_parallel_per_area` 设为训练主目标，现已改回 `delta_T_parallel`。注意 loss 相关超参（`low_delta_cutoff = 15.0`、`relative_error_epsilon = 2.0` 等）本来就是按原始 ΔT 的 K 尺度调的，改回后尺度重新匹配，无需重新调优。
 
 当前测量参数由 `src/main.py` 自动按样品尺寸设置：
 
@@ -335,8 +353,8 @@ v2 metadata 中应记录的关键字段包括：
 | `T_hot_min`, `T_hot_max`, `T_hot_min_delta`, `T_hot_amplitude` | 热端温度图统计量 |
 | `curvature_type`, `curvature_level` | 曲率信息 |
 | `measurement_wx`, `measurement_wy`, `electrode_min_gap` | 电极测量设置 |
-| `delta_T_parallel` | 主目标，顶面最大平均面内温差 |
-| `delta_T_parallel_per_area` | 单位面积温差目标 = `delta_T_parallel / (Lx × Ly)`，训练/逆设计主目标 |
+| `delta_T_parallel` | **主目标**，顶面最大平均面内温差（K），训练/逆设计目标 |
+| `delta_T_parallel_per_area` | 辅助分析列 = `delta_T_parallel / (Lx × Ly)`（K/m²），不参与训练 |
 | `qc_pass` | 后处理和物理检查是否通过 |
 | `field_file` | HDF5 场文件路径 |
 | `solver_relative_residual` | 求解器相对残差 |

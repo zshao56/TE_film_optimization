@@ -279,7 +279,67 @@ def generate_arc_structure(
     return _finalize(mask, params, env_params)
 
 
-STRUCTURED_FAMILIES = ("wedge", "curved_wedge", "step", "double_layer", "arc")
+def generate_planar_split_structure(
+    Lx,
+    Ly,
+    h,
+    k_low,
+    k_high,
+    nx,
+    ny,
+    nz,
+    split_fraction=0.5,
+    interface_tilt=0.0,
+    direction="x",
+    reverse=False,
+    env_params=None,
+):
+    """
+    Two full-thickness blocks joined at a (near-)vertical interface.
+
+    Unlike the wedge/step/arc families, whose high-k region is bottom-connected and
+    always capped by a low-k layer, here each material spans the entire thickness.
+    The high-k side becomes a direct thermal short from the hot bottom boundary to the
+    top surface while the low-k side stays close to air temperature, which maximises
+    top-surface in-plane contrast for a given thickness. This is the configuration that
+    outperformed the wedge families in earlier runs, and the previous library could not
+    represent it: the step family only reaches it in the limit
+    low_thickness_fraction -> 0 and high_thickness_fraction -> 1, which its sampling
+    ranges exclude.
+
+    `direction` selects a left/right split ("x"), a front/back split ("y"), or a
+    diagonal split ("diagonal"). `interface_tilt` shifts the interface linearly with
+    height: 0.0 is a perfectly vertical interface, positive values widen the high-k
+    side towards the top surface.
+    """
+    X, Y, Z = _normalized_grid(nx, ny, nz)
+    coord = _direction_coordinate(X, Y, direction, reverse=reverse)
+
+    interface = split_fraction + interface_tilt * (Z - 0.5)
+    interface = np.clip(interface, 0.0, 1.0)
+    mask = coord <= interface
+
+    params = _base_params("planar_split", Lx, Ly, h, k_low, k_high)
+    params.update(
+        {
+            "split_fraction": _as_float(split_fraction),
+            "interface_tilt": _as_float(interface_tilt),
+            "direction": direction,
+            "reverse": _as_bool(reverse),
+            "volume_fraction_target": _as_float(mask.mean()),
+        }
+    )
+    return _finalize(mask, params, env_params)
+
+
+STRUCTURED_FAMILIES = (
+    "wedge",
+    "curved_wedge",
+    "step",
+    "double_layer",
+    "arc",
+    "planar_split",
+)
 
 
 def sample_structured_structure(Lx, Ly, h, k_low, k_high, nx, ny, nz, env_params=None, family=None, rng=None):
@@ -389,6 +449,27 @@ def sample_structured_structure(Lx, Ly, h, k_low, k_high, nx, ny, nz, env_params
             arc_height_fraction=rng.uniform(0.35, 0.70),
             channel_half_width_fraction=rng.uniform(0.04, 0.10),
             direction=str(rng.choice(["x", "y"])),
+            reverse=reverse,
+            env_params=env_params,
+        )
+
+    if family == "planar_split":
+        # Half of the samples keep a perfectly vertical interface so the pure
+        # left/right and pure diagonal splits stay well represented; the rest tilt
+        # slightly to give the surrogate a continuous path around that configuration.
+        interface_tilt = 0.0 if _as_bool(rng.integers(0, 2)) else _as_float(rng.uniform(-0.35, 0.35))
+        return generate_planar_split_structure(
+            Lx,
+            Ly,
+            h,
+            k_low,
+            k_high,
+            nx,
+            ny,
+            nz,
+            split_fraction=rng.uniform(0.3, 0.7),
+            interface_tilt=interface_tilt,
+            direction=direction,
             reverse=reverse,
             env_params=env_params,
         )

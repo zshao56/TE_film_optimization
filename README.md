@@ -7,7 +7,7 @@ This repository focuses on the computational design and optimization of 3D thin 
 ## 🌟 Key Features
 - **3D Steady-State Heat Conduction**: A custom-built 3D Finite Difference Method (FDM) solver using `scipy.sparse` for efficient calculation of large voxel-based meshes, avoiding the need for heavy commercial software.
 - **Top-Surface Electrode Modeling**: Replaces idealized point-based metrics with a physically realistic 2D area-averaged temperature measurement over specific electrode windows.
-- **Structured Geometry Library**: Supports low-dimensional wedge, step, double-layer, and arc families so database generation is guided by interpretable structures instead of only random smoothed noise.
+- **Structured Geometry Library**: Supports low-dimensional wedge, curved-wedge, step, double-layer, arc, and planar-split families so database generation is guided by interpretable structures instead of only random smoothed noise. The `planar_split` family lets both materials span the full thickness, separated by a vertical interface running left/right or diagonally in plane; it is the only family whose top surface is not entirely capped by low-k material, so it reaches the highest attainable top-surface contrast for a given thickness.
 - **Automated Workflow Pipeline**: Supports automated geometry generation, 3D simulation, metric post-processing, and unified data storage (HDF5 field data + CSV metadata).
 - **Physical Boundary Conditions**: Rigorously defined boundary conditions (Bottom: fixed hot temperature; Top and Sides: natural convection to ambient air) ensuring fair comparison across diverse topological variants.
 

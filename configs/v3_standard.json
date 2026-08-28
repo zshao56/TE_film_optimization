@@ -203,7 +203,7 @@
     "low_delta_cutoff": 15.0,
     "relative_error_epsilon": 2.0,
     "include_boundary_channel": true,
-    "target_col": "delta_T_parallel_per_area",
+    "target_col": "delta_T_parallel",
     "run_name": "v3_standard",
     "metadata_report_dir": "results/metadata/v3_standard",
     "log_path": "logs/02_train_v3_standard.log"

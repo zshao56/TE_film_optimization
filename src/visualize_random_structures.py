@@ -19,6 +19,7 @@ from geometry.random_structure import generate_random_structure
 from geometry.structured_library import (
     generate_arc_structure,
     generate_double_layer_structure,
+    generate_planar_split_structure,
     generate_step_structure,
     generate_wedge_structure,
     generate_curved_wedge_structure,
@@ -111,6 +112,10 @@ def plot_structured_families():
             Lx, Ly, h, k_low, k_high, nx, ny, nz,
             center_fraction=0.5, radius_fraction=0.42, base_height_fraction=0.15,
             arc_height_fraction=0.6, channel_half_width_fraction=0.07, direction='x'
+        ),
+        generate_planar_split_structure(
+            Lx, Ly, h, k_low, k_high, nx, ny, nz,
+            split_fraction=0.5, interface_tilt=0.0, direction='x'
         ),
     ]
 
