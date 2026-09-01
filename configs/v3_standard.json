@@ -2,7 +2,7 @@
   "run": {
     "data_generation": true,
     "metadata_filter": true,
-    "training": false,
+    "training": true,
     "evaluation": false,
     "real_world_benchmark": false
   },
