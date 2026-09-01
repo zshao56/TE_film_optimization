@@ -242,6 +242,11 @@ def train_model(args):
         ),
         **loader_kwargs,
     )
+    per_shape = train_loader.batch_sampler.batch_sizes
+    print(f"Batch size per grid shape (reference {args.batch_size} at 50x50x20):")
+    for key in sorted(per_shape, key=lambda k: -(k[0] * k[1] * k[2])):
+        print(f"  {key[0]}x{key[1]}x{key[2]}: batch {per_shape[key]}")
+    print(f"Train batches/epoch: {len(train_loader.batch_sampler)}, val: {len(val_loader.batch_sampler)}")
 
     # Model, Loss, Optimizer
     print(f"Scalar inputs ({len(dataset.scalar_cols)}): {dataset.scalar_cols}")

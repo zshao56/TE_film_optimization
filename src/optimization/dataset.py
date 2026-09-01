@@ -15,18 +15,43 @@ class ShapeGroupBatchSampler(Sampler):
 
     `indices` maps each subset position to a dataset index (identity when the
     sampler is used with the full dataset); the sampler yields subset positions.
+
+    `batch_size` applies to the reference grid (50x50x20); larger grids get a
+    proportionally smaller batch so activation memory stays roughly constant.
+    A fixed batch across all shapes cannot work here: v3 spans 12k to 800k
+    voxels, and 512 samples of 200x200x20 need tens of GiB in the first
+    ConvBlock3D alone, which is what made training OOM.
     """
+
+    REFERENCE_VOXELS = 50 * 50 * 20
+
+    @classmethod
+    def batch_size_for(cls, key, batch_size):
+        """Scale batch_size down by the grid's voxel count, rounded to a power of two."""
+        try:
+            voxels = int(key[0]) * int(key[1]) * int(key[2])
+        except (TypeError, ValueError, IndexError):
+            return batch_size
+        if voxels <= cls.REFERENCE_VOXELS:
+            return batch_size
+        scaled = batch_size * cls.REFERENCE_VOXELS / voxels
+        power_of_two = 1 << max(0, int(scaled).bit_length() - 1) if scaled >= 1 else 1
+        return max(1, min(batch_size, power_of_two))
+
     def __init__(self, indices, grid_keys, batch_size, shuffle=True, generator=None):
         self.batches = []
+        self.batch_sizes = {}
         groups = {}
         for position in range(len(indices)):
             key = grid_keys[indices[position]]
             groups.setdefault(key, []).append(position)
-        for group in groups.values():
+        for key, group in groups.items():
+            group_batch = self.batch_size_for(key, batch_size)
+            self.batch_sizes[key] = group_batch
             if shuffle:
                 order = torch.randperm(len(group), generator=generator).tolist()
                 group = [group[i] for i in order]
-            self.batches.extend(group[i:i + batch_size] for i in range(0, len(group), batch_size))
+            self.batches.extend(group[i:i + group_batch] for i in range(0, len(group), group_batch))
         if shuffle:
             order = torch.randperm(len(self.batches), generator=generator).tolist()
             self.batches = [self.batches[i] for i in order]
