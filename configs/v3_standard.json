@@ -3,7 +3,7 @@
     "data_generation": true,
     "metadata_filter": true,
     "training": true,
-    "evaluation": false,
+    "evaluation": true,
     "real_world_benchmark": false
   },
   "environment": {
