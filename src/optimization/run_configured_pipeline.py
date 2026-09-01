@@ -100,6 +100,10 @@ def _resolve_cuda_for_stage(config, stage_config, resolve_auto=False):
 
 def _env_for_stage(config, stage_config, resolve_cuda=False):
     env = os.environ.copy()
+    # Stage output is piped to a log file, which makes Python block-buffer
+    # stdout: a long training run shows nothing for many minutes. Config
+    # environment blocks below can still override this.
+    env["PYTHONUNBUFFERED"] = "1"
     base_env = config.get("environment", {})
     for key, value in base_env.items():
         if str(key).lower() in {"cuda_visible_devices", "auto_cuda_devices"}:
